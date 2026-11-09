@@ -227,76 +227,96 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* Mobile Drawer */}
       {mobileMenuOpen && (
-        <div className="lg:hidden border-t border-[#08386a] bg-slate-900 text-white px-4 pt-3 pb-6 shadow-2xl animate-in fade-in slide-in-from-top-2 duration-150">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-            <span className="text-xs font-bold text-slate-400">ওয়েবসাইট থিম নির্বাচন:</span>
+        <div className="lg:hidden border-t border-slate-200 dark:border-[#08386a] bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-4 pt-3 pb-6 shadow-2xl animate-in fade-in slide-in-from-top-2 duration-150">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
+            <span className="text-xs font-bold text-slate-600 dark:text-slate-400">ওয়েবসাইট থিম নির্বাচন:</span>
             <button
               onClick={onToggleTheme}
-              className="px-3 py-1 rounded-lg bg-slate-800 text-xs font-bold text-white flex items-center gap-2 border border-slate-700"
+              className="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs font-bold text-slate-800 dark:text-white flex items-center gap-2 border border-slate-300 dark:border-slate-700 cursor-pointer shadow-2xs"
             >
               {isDarkMode ? (
                 <>
-                  <Sun className="w-3.5 h-3.5 text-amber-300" />
+                  <Sun className="w-3.5 h-3.5 text-amber-500 animate-spin-slow" />
                   <span>লাইট মোডে যান</span>
                 </>
               ) : (
                 <>
-                  <Moon className="w-3.5 h-3.5 text-cyan-200" />
+                  <Moon className="w-3.5 h-3.5 text-[#0B4A8A]" />
                   <span>ডার্ক মোডে যান</span>
                 </>
               )}
             </button>
           </div>
 
-          <div className="flex flex-col gap-2 py-2 text-sm font-semibold">
+          <div className="flex flex-col gap-1.5 py-2.5 text-sm font-semibold">
             <button
               onClick={() => handleNavView('home')}
-              className="text-left px-3 py-2.5 rounded-xl text-white bg-slate-800 font-bold"
+              className={`text-left px-3 py-2.5 rounded-xl transition-colors cursor-pointer ${
+                currentView === 'home'
+                  ? 'text-[#0B4A8A] dark:text-[#FF7900] bg-slate-100 dark:bg-slate-800 font-black'
+                  : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
+              }`}
             >
               হোম (Home)
             </button>
             <button
               onClick={() => handleNavView('shops')}
-              className="text-left px-3 py-2.5 rounded-xl text-slate-200 hover:bg-slate-800 flex items-center justify-between"
+              className={`text-left px-3 py-2.5 rounded-xl flex items-center justify-between transition-colors cursor-pointer ${
+                currentView === 'shops'
+                  ? 'text-[#0B4A8A] dark:text-[#FF7900] bg-slate-100 dark:bg-slate-800 font-black'
+                  : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
+              }`}
             >
               <span>দোকানসমূহ (Shops)</span>
               <Store className="w-4 h-4 text-[#FF7900]" />
             </button>
             <button
               onClick={() => handleNavView('products')}
-              className="text-left px-3 py-2.5 rounded-xl text-slate-200 hover:bg-slate-800 flex items-center justify-between"
+              className={`text-left px-3 py-2.5 rounded-xl flex items-center justify-between transition-colors cursor-pointer ${
+                currentView === 'products'
+                  ? 'text-[#0B4A8A] dark:text-[#FF7900] bg-slate-100 dark:bg-slate-800 font-black'
+                  : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
+              }`}
             >
               <span>পণ্যসমূহ (Products)</span>
-              <ShoppingBag className="w-4 h-4 text-cyan-400" />
+              <ShoppingBag className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
             </button>
             <button
               onClick={() => handleNavView('price-compare')}
-              className="text-left px-3 py-2.5 rounded-xl text-slate-200 hover:bg-slate-800 flex items-center justify-between"
+              className={`text-left px-3 py-2.5 rounded-xl flex items-center justify-between transition-colors cursor-pointer ${
+                currentView === 'price-compare'
+                  ? 'text-[#0B4A8A] dark:text-[#FF7900] bg-slate-100 dark:bg-slate-800 font-black'
+                  : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
+              }`}
             >
               <span>দাম তুলনা (Price Compare)</span>
-              <Scale className="w-4 h-4 text-emerald-400" />
+              <Scale className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
             </button>
             <button
               onClick={() => handleNavView('dashboard')}
-              className="text-left px-3 py-2.5 rounded-xl text-[#FF7900] bg-slate-800 font-bold flex items-center justify-between"
+              className={`text-left px-3 py-2.5 rounded-xl font-bold flex items-center justify-between transition-colors cursor-pointer ${
+                currentView === 'dashboard'
+                  ? 'text-[#FF7900] bg-slate-100 dark:bg-slate-800 font-black'
+                  : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
+              }`}
             >
               <span className="flex items-center gap-2">
                 <User className="w-4 h-4 text-[#FF7900]" />
                 <span>{hasOwnedShop ? 'দোকানদার ড্যাশবোর্ড' : 'ক্রেতা ড্যাশবোর্ড'}</span>
               </span>
               {hasOwnedShop && (
-                <span className="text-[10px] bg-emerald-900 text-emerald-300 px-2 py-0.5 rounded-full font-bold border border-emerald-700">
+                <span className="text-[10px] bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-300 px-2 py-0.5 rounded-full font-bold border border-emerald-300 dark:border-emerald-700">
                   সক্রিয় দোকান
                 </span>
               )}
             </button>
           </div>
 
-          <div className="pt-4 mt-2 border-t border-slate-800 flex flex-col gap-2.5">
+          <div className="pt-4 mt-2 border-t border-slate-200 dark:border-slate-800 flex flex-col gap-2.5">
             {hasOwnedShop ? (
               <button
                 onClick={() => handleNavView('dashboard')}
-                className="w-full flex items-center justify-center gap-2 py-2.5 text-xs font-black text-white bg-[#FF7900] hover:bg-[#e06b00] rounded-xl transition-colors shadow-xs"
+                className="w-full flex items-center justify-center gap-2 py-2.5 text-xs font-black text-white bg-[#FF7900] hover:bg-[#e06b00] rounded-xl transition-colors shadow-xs cursor-pointer"
               >
                 <Store className="w-4 h-4" />
                 <span>আমার দোকান ড্যাশবোর্ড ({ownedShopName || 'প্রবেশ করুন'})</span>
@@ -307,7 +327,7 @@ export const Header: React.FC<HeaderProps> = ({
                   setMobileMenuOpen(false);
                   onOpenAddShopModal();
                 }}
-                className="w-full flex items-center justify-center gap-2 py-2.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-500 rounded-xl transition-colors shadow-xs"
+                className="w-full flex items-center justify-center gap-2 py-2.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-500 rounded-xl transition-colors shadow-xs cursor-pointer"
               >
                 <Store className="w-4 h-4" />
                 আপনার দোকান যুক্ত করুন
@@ -320,7 +340,7 @@ export const Header: React.FC<HeaderProps> = ({
                   setMobileMenuOpen(false);
                   onOpenAuthModal('login');
                 }}
-                className="w-full py-2.5 text-xs font-semibold text-white border border-slate-700 rounded-xl hover:bg-slate-800 text-center"
+                className="w-full py-2.5 text-xs font-semibold text-slate-700 dark:text-white border border-slate-300 dark:border-slate-700 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-center transition-colors cursor-pointer"
               >
                 লগইন (Login)
               </button>
@@ -329,7 +349,7 @@ export const Header: React.FC<HeaderProps> = ({
                   setMobileMenuOpen(false);
                   onOpenAuthModal('signup');
                 }}
-                className="w-full py-2.5 text-xs font-semibold text-white bg-[#FF7900] rounded-xl hover:bg-[#e06b00] text-center"
+                className="w-full py-2.5 text-xs font-semibold text-white bg-[#FF7900] rounded-xl hover:bg-[#e06b00] text-center transition-colors cursor-pointer"
               >
                 সাইন আপ
               </button>

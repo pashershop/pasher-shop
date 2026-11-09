@@ -151,20 +151,20 @@ export const ShopkeeperDashboard: React.FC<ShopkeeperDashboardProps> = ({
   // If the user has no shop added yet -> Access Gate view!
   if (!shop) {
     return (
-      <div className="min-h-[80vh] flex items-center justify-center p-4 sm:p-6 bg-slate-50">
-        <div className="max-w-lg w-full bg-white rounded-3xl p-8 sm:p-10 shadow-xl border border-slate-200 text-center space-y-6">
-          <div className="w-20 h-20 rounded-3xl bg-amber-50 border-2 border-amber-200 text-[#FF7900] flex items-center justify-center mx-auto shadow-xs">
+      <div className="min-h-[80vh] flex items-center justify-center p-4 sm:p-6 bg-[#F8FAFC] dark:bg-[#030712] transition-colors">
+        <div className="max-w-lg w-full bg-white dark:bg-slate-900/90 rounded-3xl p-8 sm:p-10 shadow-xl border border-slate-200 dark:border-slate-800 text-center space-y-6">
+          <div className="w-20 h-20 rounded-3xl bg-amber-50 dark:bg-amber-950/40 border-2 border-amber-200 dark:border-amber-800 text-[#FF7900] flex items-center justify-center mx-auto shadow-xs">
             <Store className="w-10 h-10" />
           </div>
 
           <div className="space-y-2">
-            <span className="text-xs font-bold px-3 py-1 rounded-full bg-amber-100 text-amber-900 border border-amber-300">
+            <span className="text-xs font-bold px-3 py-1 rounded-full bg-amber-100 dark:bg-amber-950/80 text-amber-900 dark:text-amber-300 border border-amber-300 dark:border-amber-700">
               দোকানদারদের সংরক্ষিত পেজ
             </span>
-            <h2 className="text-2xl sm:text-3xl font-black text-slate-900 mt-2">
+            <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mt-2">
               আপনার কোনো দোকান এখনো যুক্ত নেই!
             </h2>
-            <p className="text-sm text-slate-600 leading-relaxed max-w-sm mx-auto">
+            <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed max-w-sm mx-auto">
               দোকানদার ড্যাশবোর্ড কেবল নিবন্ধিত দোকানদারদের জন্য। আপনার দোকানটি যুক্ত করুন অথবা একটি ডেমো দোকান দিয়ে ড্যাশবোর্ড পরীক্ষা করুন।
             </p>
           </div>
@@ -181,7 +181,7 @@ export const ShopkeeperDashboard: React.FC<ShopkeeperDashboardProps> = ({
             {onSelectDemoShop && (
               <button
                 onClick={onSelectDemoShop}
-                className="w-full py-3 px-6 rounded-2xl font-bold text-xs text-[#0B4A8A] bg-slate-100 hover:bg-slate-200 border border-slate-200 transition-all cursor-pointer flex items-center justify-center gap-2"
+                className="w-full py-3 px-6 rounded-2xl font-bold text-xs text-[#0B4A8A] dark:text-cyan-400 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 transition-all cursor-pointer flex items-center justify-center gap-2"
               >
                 <Sparkles className="w-4 h-4 text-[#FF7900]" />
                 <span>ডেমো দোকান দিয়ে ড্যাশবোর্ড ডেমো দেখুন</span>
@@ -190,7 +190,7 @@ export const ShopkeeperDashboard: React.FC<ShopkeeperDashboardProps> = ({
 
             <button
               onClick={onBackToHome}
-              className="w-full py-2.5 text-xs font-semibold text-slate-500 hover:text-slate-800 transition-colors"
+              className="w-full py-2.5 text-xs font-semibold text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors"
             >
               ← মূল ওয়েবসাইটে ফিরে যান
             </button>
@@ -283,33 +283,34 @@ export const ShopkeeperDashboard: React.FC<ShopkeeperDashboardProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] pb-16">
+    <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#030712] text-slate-900 dark:text-slate-100 pb-20 transition-colors">
+      
       {/* 1. Top Navigation Bar */}
-      <div className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200">
+      <div className="sticky top-0 z-30 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 shadow-xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16 sm:h-20 gap-4">
             <div className="flex items-center gap-3">
               <button
                 onClick={onBackToHome}
-                className="p-2 rounded-xl text-slate-600 hover:text-[#0B4A8A] hover:bg-slate-100 transition-colors flex items-center gap-1.5 text-xs sm:text-sm font-bold cursor-pointer"
+                className="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:text-[#0B4A8A] dark:hover:text-cyan-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center gap-1.5 text-xs sm:text-sm font-bold cursor-pointer"
                 title="মূল ওয়েবসাইটে ফিরুন"
               >
                 <ArrowLeft className="w-4 h-4" />
                 <span className="hidden sm:inline">হোমে ফিরুন</span>
               </button>
 
-              <div className="h-6 w-px bg-slate-200 hidden sm:block" />
+              <div className="h-6 w-px bg-slate-200 dark:bg-slate-700 hidden sm:block" />
 
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-xl bg-[#0B4A8A] text-white flex items-center justify-center font-bold text-xs shadow-xs">
                   <Store className="w-4 h-4 text-[#FF7900]" />
                 </div>
                 <div>
-                  <h1 className="text-sm sm:text-base font-black text-slate-900 leading-tight truncate max-w-[180px] sm:max-w-xs">
+                  <h1 className="text-sm sm:text-base font-black text-slate-900 dark:text-white leading-tight truncate max-w-[180px] sm:max-w-xs">
                     {shop.nameBn}
                   </h1>
-                  <span className="text-[11px] text-slate-500 flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                     দোকানদার কন্ট্রোল ড্যাশবোর্ড
                   </span>
                 </div>
@@ -324,8 +325,8 @@ export const ShopkeeperDashboard: React.FC<ShopkeeperDashboardProps> = ({
                 onClick={handleToggleShopOpen}
                 className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2 cursor-pointer shadow-xs border ${
                   shop.isOpen
-                    ? 'bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100'
-                    : 'bg-red-50 text-red-800 border-red-300 hover:bg-red-100'
+                    ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800 hover:bg-emerald-100'
+                    : 'bg-red-50 dark:bg-red-950/60 text-red-800 dark:text-red-300 border-red-300 dark:border-red-800 hover:bg-red-100'
                 }`}
                 title="দোকান খোলা বা বন্ধ করার সুইচ"
               >
@@ -342,7 +343,7 @@ export const ShopkeeperDashboard: React.FC<ShopkeeperDashboardProps> = ({
               <button
                 type="button"
                 onClick={() => onOpenCustomerPreview(shop)}
-                className="px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs font-bold text-[#0B4A8A] bg-[#0B4A8A]/10 hover:bg-[#0B4A8A]/20 transition-all flex items-center gap-1.5 cursor-pointer"
+                className="px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs font-bold text-[#0B4A8A] dark:text-cyan-400 bg-[#0B4A8A]/10 dark:bg-[#0B4A8A]/30 hover:bg-[#0B4A8A]/20 transition-all flex items-center gap-1.5 cursor-pointer"
                 title="গ্রাহকরা আপনার দোকান যেভাবে দেখতে পান"
               >
                 <Eye className="w-3.5 h-3.5 text-[#FF7900]" />
@@ -355,13 +356,14 @@ export const ShopkeeperDashboard: React.FC<ShopkeeperDashboardProps> = ({
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 space-y-6">
         
-        {/* 2. Hero Shop Identity Card with Banner */}
-        <div className="relative rounded-3xl overflow-hidden bg-slate-900 border border-slate-200 shadow-md">
-          <div className="h-44 sm:h-52 w-full relative">
+        {/* 2. Hero Shop Identity Card with Banner (Full Width) */}
+        <div className="w-full relative rounded-3xl overflow-hidden bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-md">
+          <div className="h-44 sm:h-56 w-full relative">
             <img
               src={shop.bannerImage || shop.coverImage}
               alt={shop.nameBn}
               className="w-full h-full object-cover"
+              referrerPolicy="no-referrer"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-black/20" />
             
@@ -403,70 +405,70 @@ export const ShopkeeperDashboard: React.FC<ShopkeeperDashboardProps> = ({
           </div>
         </div>
 
-        {/* 3. Analytics KPI Summary Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        {/* 3. Analytics KPI Summary Cards (Full Width Container) */}
+        <div className="w-full grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {/* Card 1: Views */}
-          <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs flex items-center gap-3">
-            <div className="w-11 h-11 rounded-xl bg-blue-50 text-[#0B4A8A] flex items-center justify-center shrink-0">
+          <div className="w-full p-4 rounded-2xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 shadow-xs flex items-center gap-3">
+            <div className="w-11 h-11 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-[#0B4A8A] dark:text-cyan-400 flex items-center justify-center shrink-0">
               <Eye className="w-5 h-5" />
             </div>
             <div>
-              <div className="text-[11px] font-bold text-slate-400">আজকের দোকান ভিউ</div>
-              <div className="text-lg sm:text-xl font-black text-slate-900">
+              <div className="text-[11px] font-bold text-slate-400 dark:text-slate-500">আজকের দোকান ভিউ</div>
+              <div className="text-lg sm:text-xl font-black text-slate-900 dark:text-white">
                 {toBnNumber(142)} বার
               </div>
             </div>
           </div>
 
           {/* Card 2: Calls */}
-          <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs flex items-center gap-3">
-            <div className="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+          <div className="w-full p-4 rounded-2xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 shadow-xs flex items-center gap-3">
+            <div className="w-11 h-11 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
               <Phone className="w-5 h-5" />
             </div>
             <div>
-              <div className="text-[11px] font-bold text-slate-400">সরাসরি কল অনুসন্ধান</div>
-              <div className="text-lg sm:text-xl font-black text-slate-900">
+              <div className="text-[11px] font-bold text-slate-400 dark:text-slate-500">সরাসরি কল অনুসন্ধান</div>
+              <div className="text-lg sm:text-xl font-black text-slate-900 dark:text-white">
                 {toBnNumber(18)} টি
               </div>
             </div>
           </div>
 
           {/* Card 3: Route Checked */}
-          <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs flex items-center gap-3">
-            <div className="w-11 h-11 rounded-xl bg-orange-50 text-[#FF7900] flex items-center justify-center shrink-0">
+          <div className="w-full p-4 rounded-2xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 shadow-xs flex items-center gap-3">
+            <div className="w-11 h-11 rounded-xl bg-orange-50 dark:bg-orange-950/60 text-[#FF7900] flex items-center justify-center shrink-0">
               <MapPin className="w-5 h-5" />
             </div>
             <div>
-              <div className="text-[11px] font-bold text-slate-400">ম্যাপে রুট দেখা হয়েছে</div>
-              <div className="text-lg sm:text-xl font-black text-slate-900">
+              <div className="text-[11px] font-bold text-slate-400 dark:text-slate-500">ম্যাপে রুট দেখা হয়েছে</div>
+              <div className="text-lg sm:text-xl font-black text-slate-900 dark:text-white">
                 {toBnNumber(39)} বার
               </div>
             </div>
           </div>
 
           {/* Card 4: Products count */}
-          <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs flex items-center gap-3">
-            <div className="w-11 h-11 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+          <div className="w-full p-4 rounded-2xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 shadow-xs flex items-center gap-3">
+            <div className="w-11 h-11 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
               <Package className="w-5 h-5" />
             </div>
             <div>
-              <div className="text-[11px] font-bold text-slate-400">তালিকাভুক্ত পণ্য</div>
-              <div className="text-lg sm:text-xl font-black text-slate-900">
+              <div className="text-[11px] font-bold text-slate-400 dark:text-slate-500">তালিকাভুক্ত পণ্য</div>
+              <div className="text-lg sm:text-xl font-black text-slate-900 dark:text-white">
                 {toBnNumber(products.length)} টি
               </div>
             </div>
           </div>
         </div>
 
-        {/* 4. Tab Navigation Bar */}
-        <div className="flex border-b border-slate-200 bg-white rounded-2xl p-1.5 shadow-2xs gap-1 sm:gap-2 overflow-x-auto">
+        {/* 4. Tab Navigation Bar (Full Width) */}
+        <div className="w-full flex border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 rounded-2xl p-1.5 shadow-2xs gap-1 sm:gap-2 overflow-x-auto">
           <button
             type="button"
             onClick={() => setActiveTab('products')}
             className={`flex-1 py-2.5 px-3 sm:px-4 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap ${
               activeTab === 'products'
                 ? 'bg-[#0B4A8A] text-white shadow-xs'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
             }`}
           >
             <Package className="w-4 h-4" />
@@ -479,7 +481,7 @@ export const ShopkeeperDashboard: React.FC<ShopkeeperDashboardProps> = ({
             className={`flex-1 py-2.5 px-3 sm:px-4 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap ${
               activeTab === 'orders'
                 ? 'bg-[#0B4A8A] text-white shadow-xs'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
             }`}
           >
             <ShoppingBag className="w-4 h-4" />
@@ -492,7 +494,7 @@ export const ShopkeeperDashboard: React.FC<ShopkeeperDashboardProps> = ({
             className={`flex-1 py-2.5 px-3 sm:px-4 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap ${
               activeTab === 'settings'
                 ? 'bg-[#0B4A8A] text-white shadow-xs'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
             }`}
           >
             <Settings className="w-4 h-4" />
@@ -505,7 +507,7 @@ export const ShopkeeperDashboard: React.FC<ShopkeeperDashboardProps> = ({
             className={`flex-1 py-2.5 px-3 sm:px-4 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap ${
               activeTab === 'reviews'
                 ? 'bg-[#0B4A8A] text-white shadow-xs'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
             }`}
           >
             <Star className="w-4 h-4" />
@@ -517,11 +519,11 @@ export const ShopkeeperDashboard: React.FC<ShopkeeperDashboardProps> = ({
 
         {/* TAB 1: PRODUCT MANAGEMENT */}
         {activeTab === 'products' && (
-          <div className="space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-200">
+          <div className="w-full space-y-4">
+            <div className="w-full flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-slate-900/90 p-4 rounded-2xl border border-slate-200 dark:border-slate-800">
               <div>
-                <h3 className="font-black text-slate-900 text-base">আপনার দোকানের পণ্যের তালিকা</h3>
-                <p className="text-xs text-slate-500">
+                <h3 className="font-black text-slate-900 dark:text-white text-base">আপনার দোকানের পণ্যের তালিকা</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
                   পণ্য যুক্ত করুন বা দাম আপডেট করুন যাতে আশেপাশের কাস্টমাররা সহজেই আপনার পণ্যের দাম জানতে পারে
                 </p>
               </div>
@@ -536,28 +538,28 @@ export const ShopkeeperDashboard: React.FC<ShopkeeperDashboardProps> = ({
               </button>
             </div>
 
-            {/* Products Grid / Table */}
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-              <div className="divide-y divide-slate-100">
+            {/* Products Table Card (Full Width) */}
+            <div className="w-full bg-white dark:bg-slate-900/90 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden">
+              <div className="divide-y divide-slate-100 dark:divide-slate-800">
                 {products.map((item, idx) => (
                   <div
                     key={item.id}
-                    className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-50/70 transition-colors"
+                    className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-orange-50 border border-orange-200/60 text-[#FF7900] flex items-center justify-center font-bold text-sm shrink-0">
+                      <div className="w-10 h-10 rounded-xl bg-orange-50 dark:bg-orange-950/40 border border-orange-200/60 dark:border-orange-800/60 text-[#FF7900] flex items-center justify-center font-bold text-sm shrink-0">
                         {toBnNumber(idx + 1)}
                       </div>
                       <div>
-                        <h4 className="font-bold text-slate-900 text-sm">{item.nameBn}</h4>
-                        <div className="flex items-center gap-2 text-xs text-slate-500 mt-0.5">
+                        <h4 className="font-bold text-slate-900 dark:text-white text-sm">{item.nameBn}</h4>
+                        <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                           <span>একক: {item.unit}</span>
                           <span>·</span>
                           <span
                             className={`px-2 py-0.2 rounded-md font-semibold text-[10px] ${
                               item.inStock
-                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                : 'bg-red-50 text-red-700 border border-red-200'
+                                ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
+                                : 'bg-red-50 dark:bg-red-950/60 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800'
                             }`}
                           >
                             {item.inStock ? 'ইন স্টক' : 'স্টক শেষ'}
@@ -566,10 +568,10 @@ export const ShopkeeperDashboard: React.FC<ShopkeeperDashboardProps> = ({
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4 border-t sm:border-t-0 pt-2 sm:pt-0">
+                    <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4 border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-100 dark:border-slate-800">
                       <div className="text-left sm:text-right">
-                        <div className="text-[10px] text-slate-400 font-medium">নির্ধারিত দাম</div>
-                        <div className="text-base font-black text-[#0B4A8A]">
+                        <div className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">নির্ধারিত দাম</div>
+                        <div className="text-base font-black text-[#0B4A8A] dark:text-cyan-400">
                           ৳{toBnNumber(item.price)}
                         </div>
                       </div>
@@ -580,8 +582,8 @@ export const ShopkeeperDashboard: React.FC<ShopkeeperDashboardProps> = ({
                           onClick={() => handleToggleProductStock(item.id)}
                           className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-colors cursor-pointer ${
                             item.inStock
-                              ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
-                              : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-200'
+                              ? 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700'
+                              : 'bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
                           }`}
                           title="স্টক স্ট্যাটাস পরিবর্তন"
                         >
@@ -591,7 +593,7 @@ export const ShopkeeperDashboard: React.FC<ShopkeeperDashboardProps> = ({
                         <button
                           type="button"
                           onClick={() => handleDeleteProduct(item.id)}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors cursor-pointer"
                           title="পণ্যটি মুছে ফেলুন"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -607,53 +609,53 @@ export const ShopkeeperDashboard: React.FC<ShopkeeperDashboardProps> = ({
 
         {/* TAB 2: INQUIRIES & ORDERS */}
         {activeTab === 'orders' && (
-          <div className="space-y-4">
-            <div className="bg-white p-4 rounded-2xl border border-slate-200">
-              <h3 className="font-black text-slate-900 text-base">গ্রাহকের অর্ডার ও সাম্প্রতিক অনুসন্ধান</h3>
-              <p className="text-xs text-slate-500">
+          <div className="w-full space-y-4">
+            <div className="w-full bg-white dark:bg-slate-900/90 p-4 rounded-2xl border border-slate-200 dark:border-slate-800">
+              <h3 className="font-black text-slate-900 dark:text-white text-base">গ্রাহকের অর্ডার ও সাম্প্রতিক অনুসন্ধান</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
                 কাস্টমাররা আপনার দোকানে সরাসরি কল বা অর্ডার প্রদান করলে তা এখানে দেখতে পাবেন
               </p>
             </div>
 
-            <div className="space-y-3">
+            <div className="w-full space-y-3">
               {inquiries.map((inq) => (
                 <div
                   key={inq.id}
-                  className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-3"
+                  className="w-full bg-white dark:bg-slate-900/90 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs space-y-3"
                 >
-                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-2.5">
                     <div className="flex items-center gap-2">
                       <span
                         className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${
                           inq.status === 'নতুন'
-                            ? 'bg-amber-100 text-amber-800 animate-pulse'
+                            ? 'bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 animate-pulse'
                             : inq.status === 'প্রসেসিং'
-                            ? 'bg-blue-100 text-blue-800'
-                            : 'bg-emerald-100 text-emerald-800'
+                            ? 'bg-blue-100 dark:bg-blue-950/80 text-blue-800 dark:text-blue-300'
+                            : 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300'
                         }`}
                       >
                         ● {inq.status}
                       </span>
-                      <span className="font-bold text-sm text-slate-900">{inq.customerName}</span>
-                      <span className="text-xs text-slate-400">({inq.timeBn})</span>
+                      <span className="font-bold text-sm text-slate-900 dark:text-white">{inq.customerName}</span>
+                      <span className="text-xs text-slate-400 dark:text-slate-500">({inq.timeBn})</span>
                     </div>
 
                     <a
                       href={`tel:${inq.customerPhone.replace(/[^0-9]/g, '')}`}
-                      className="px-3 py-1 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-bold border border-emerald-200 flex items-center gap-1.5 transition-colors"
+                      className="px-3 py-1 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 text-emerald-700 dark:text-emerald-300 text-xs font-bold border border-emerald-200 dark:border-emerald-800 flex items-center gap-1.5 transition-colors"
                     >
                       <Phone className="w-3.5 h-3.5" />
                       <span>{inq.customerPhone}</span>
                     </a>
                   </div>
 
-                  <div className="text-xs text-slate-700">
-                    <span className="font-bold text-slate-900">অনুরোধ/অর্ডার বিবরণ: </span>
+                  <div className="text-xs text-slate-700 dark:text-slate-300">
+                    <span className="font-bold text-slate-900 dark:text-white">অনুরোধ/অর্ডার বিবরণ: </span>
                     <span>{inq.items}</span>
                   </div>
 
                   {inq.totalAmount > 0 && (
-                    <div className="text-xs font-bold text-[#0B4A8A]">
+                    <div className="text-xs font-bold text-[#0B4A8A] dark:text-cyan-400">
                       আনুমানিক মূল্য: ৳{toBnNumber(inq.totalAmount)}
                     </div>
                   )}
@@ -673,7 +675,7 @@ export const ShopkeeperDashboard: React.FC<ShopkeeperDashboardProps> = ({
                       <button
                         type="button"
                         onClick={() => handleUpdateInquiryStatus(inq.id, 'প্রসেসিং')}
-                        className="px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200 transition-colors cursor-pointer"
+                        className="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer"
                       >
                         প্রসেসিং হচ্ছে
                       </button>
@@ -687,18 +689,18 @@ export const ShopkeeperDashboard: React.FC<ShopkeeperDashboardProps> = ({
 
         {/* TAB 3: SHOP SETTINGS & BANNER */}
         {activeTab === 'settings' && (
-          <div className="bg-white p-5 sm:p-7 rounded-3xl border border-slate-200 shadow-sm space-y-6">
-            <div className="border-b border-slate-100 pb-4 flex items-center justify-between">
+          <div className="w-full bg-white dark:bg-slate-900/90 p-5 sm:p-7 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
+            <div className="border-b border-slate-100 dark:border-slate-800 pb-4 flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-black text-slate-900">দোকানের তথ্য ও ব্যানার সেটিংস</h3>
-                <p className="text-xs text-slate-500">
+                <h3 className="text-lg font-black text-slate-900 dark:text-white">দোকানের তথ্য ও ব্যানার সেটিংস</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
                   আপনার দোকানের ছবি, যোগাযোগের নম্বর এবং সময়সূচি কাস্টমাইজ করুন
                 </p>
               </div>
 
               {showSaveToast && (
-                <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200 animate-in fade-in">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-3 py-1.5 rounded-xl border border-emerald-200 dark:border-emerald-800 animate-in fade-in">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                   <span>তথ্য সফলভাবে সংরক্ষিত হয়েছে!</span>
                 </div>
               )}
@@ -707,16 +709,17 @@ export const ShopkeeperDashboard: React.FC<ShopkeeperDashboardProps> = ({
             <form onSubmit={handleSaveSettings} className="space-y-5">
               {/* 1. Banner Image Selector */}
               <div className="space-y-3">
-                <label className="block text-xs font-black text-slate-800">
+                <label className="block text-xs font-black text-slate-800 dark:text-slate-200">
                   দোকানের কভার / ব্যানার ছবি:
                 </label>
 
                 {/* Banner Preview */}
-                <div className="h-40 sm:h-48 w-full rounded-2xl overflow-hidden border-2 border-slate-200 relative bg-slate-100 shadow-inner">
+                <div className="h-40 sm:h-52 w-full rounded-2xl overflow-hidden border-2 border-slate-200 dark:border-slate-700 relative bg-slate-100 dark:bg-slate-800 shadow-inner">
                   <img
                     src={settingsBanner}
                     alt="Current Banner"
                     className="w-full h-full object-cover"
+                    referrerPolicy="no-referrer"
                   />
                   <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
                     <span className="text-white font-bold text-sm bg-black/60 px-3 py-1 rounded-xl backdrop-blur-xs">
@@ -727,7 +730,7 @@ export const ShopkeeperDashboard: React.FC<ShopkeeperDashboardProps> = ({
 
                 {/* Presets Grid */}
                 <div className="space-y-1.5">
-                  <span className="text-[11px] font-bold text-slate-500">
+                  <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400">
                     রেডিমেড প্রিসেট ব্যানার থেকে বেছে নিন:
                   </span>
                   <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
@@ -741,13 +744,14 @@ export const ShopkeeperDashboard: React.FC<ShopkeeperDashboardProps> = ({
                           className={`group relative h-16 rounded-xl overflow-hidden border-2 transition-all cursor-pointer ${
                             isSelected
                               ? 'border-[#FF7900] ring-2 ring-[#FF7900]/30 shadow-xs'
-                              : 'border-slate-200 opacity-70 hover:opacity-100'
+                              : 'border-slate-200 dark:border-slate-700 opacity-70 hover:opacity-100'
                           }`}
                         >
                           <img
                             src={preset.url}
                             alt={preset.label}
                             className="w-full h-full object-cover"
+                            referrerPolicy="no-referrer"
                           />
                           <div className="absolute inset-0 bg-black/45 group-hover:bg-black/30 flex items-center justify-center p-1 text-center">
                             <span className="text-[10px] font-bold text-white leading-tight">
@@ -769,7 +773,7 @@ export const ShopkeeperDashboard: React.FC<ShopkeeperDashboardProps> = ({
               {/* 2. Shop Details Inputs */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                     দোকানের নাম (বাংলায়):
                   </label>
                   <input
@@ -777,12 +781,12 @@ export const ShopkeeperDashboard: React.FC<ShopkeeperDashboardProps> = ({
                     value={settingsShopName}
                     onChange={(e) => setSettingsShopName(e.target.value)}
                     required
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#0B4A8A]"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#0B4A8A]"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                     যোগাযোগের ফোন নম্বর:
                   </label>
                   <input
@@ -790,12 +794,12 @@ export const ShopkeeperDashboard: React.FC<ShopkeeperDashboardProps> = ({
                     value={settingsPhone}
                     onChange={(e) => setSettingsPhone(e.target.value)}
                     required
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#0B4A8A]"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#0B4A8A]"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                     দোকানের পূর্ণ ঠিকানা:
                   </label>
                   <input
@@ -803,12 +807,12 @@ export const ShopkeeperDashboard: React.FC<ShopkeeperDashboardProps> = ({
                     value={settingsAddress}
                     onChange={(e) => setSettingsAddress(e.target.value)}
                     required
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#0B4A8A]"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#0B4A8A]"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                     খোলা থাকার সময়সূচি:
                   </label>
                   <input
@@ -816,21 +820,21 @@ export const ShopkeeperDashboard: React.FC<ShopkeeperDashboardProps> = ({
                     value={settingsTiming}
                     onChange={(e) => setSettingsTiming(e.target.value)}
                     required
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#0B4A8A]"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#0B4A8A]"
                   />
                 </div>
               </div>
 
               {/* 3. Delivery Settings */}
-              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Truck className="w-4 h-4 text-emerald-600" />
+                    <Truck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                     <div>
-                      <span className="text-xs font-bold text-slate-900 block">
+                      <span className="text-xs font-bold text-slate-900 dark:text-white block">
                         হোম ডেলিভারি সুবিধা
                       </span>
-                      <span className="text-[11px] text-slate-500">
+                      <span className="text-[11px] text-slate-500 dark:text-slate-400">
                         আপনার দোকান থেকে সরাসরি হোম ডেলিভারি সুবিধা প্রদান করেন কিনা
                       </span>
                     </div>
@@ -844,15 +848,15 @@ export const ShopkeeperDashboard: React.FC<ShopkeeperDashboardProps> = ({
                 </div>
 
                 {settingsDelivery && (
-                  <div className="pt-2 border-t border-slate-200 flex items-center gap-3">
-                    <label className="text-xs font-bold text-slate-700">
+                  <div className="pt-2 border-t border-slate-200 dark:border-slate-700 flex items-center gap-3">
+                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
                       ন্যূনতম ডেলিভারি অর্ডার মূল্য (৳):
                     </label>
                     <input
                       type="number"
                       value={settingsMinOrder}
                       onChange={(e) => setSettingsMinOrder(e.target.value)}
-                      className="w-28 px-3 py-1.5 rounded-lg border border-slate-300 text-xs font-bold"
+                      className="w-28 px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold"
                     />
                   </div>
                 )}
@@ -874,20 +878,20 @@ export const ShopkeeperDashboard: React.FC<ShopkeeperDashboardProps> = ({
 
         {/* TAB 4: CUSTOMER REVIEWS */}
         {activeTab === 'reviews' && (
-          <div className="bg-white p-5 sm:p-7 rounded-3xl border border-slate-200 shadow-sm space-y-5">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+          <div className="w-full bg-white dark:bg-slate-900/90 p-5 sm:p-7 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-4">
               <div>
-                <h3 className="text-lg font-black text-slate-900">গ্রাহকদের রিভিউ ও প্রতিক্রিয়া</h3>
-                <p className="text-xs text-slate-500">
+                <h3 className="text-lg font-black text-slate-900 dark:text-white">গ্রাহকদের রিভিউ ও প্রতিক্রিয়া</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
                   আপনার দোকানে সেবা গ্রহণকারী কাস্টমারদের মতামত
                 </p>
               </div>
 
-              <div className="flex items-center gap-3 bg-amber-50 px-4 py-2 rounded-2xl border border-amber-200">
+              <div className="flex items-center gap-3 bg-amber-50 dark:bg-amber-950/40 px-4 py-2 rounded-2xl border border-amber-200 dark:border-amber-800">
                 <Star className="w-5 h-5 fill-amber-400 text-amber-500" />
                 <div>
-                  <div className="text-base font-black text-slate-900">{shop.rating} / ৫.০</div>
-                  <div className="text-[10px] text-slate-500 font-bold">
+                  <div className="text-base font-black text-slate-900 dark:text-white">{shop.rating} / ৫.০</div>
+                  <div className="text-[10px] text-slate-500 dark:text-slate-400 font-bold">
                     {toBnNumber(shop.reviewCount)} জন কাস্টমার রেটিং দিয়েছেন
                   </div>
                 </div>
@@ -895,26 +899,26 @@ export const ShopkeeperDashboard: React.FC<ShopkeeperDashboardProps> = ({
             </div>
 
             <div className="space-y-3">
-              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-1.5 text-xs">
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 space-y-1.5 text-xs">
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-slate-800">রাকিবুল হাসান (ধানমন্ডি)</span>
+                  <span className="font-bold text-slate-800 dark:text-slate-200">রাকিবুল হাসান (ধানমন্ডি)</span>
                   <span className="text-amber-500 font-bold">★★★★★ ৫/৫</span>
                 </div>
-                <p className="text-slate-600">
+                <p className="text-slate-600 dark:text-slate-300">
                   খুবই দ্রুত হোম ডেলিভারি দিয়েছেন। পণ্যের মান ও দাম দুটোই সেরা ছিল।
                 </p>
-                <div className="text-[10px] text-slate-400">২ দিন আগে</div>
+                <div className="text-[10px] text-slate-400 dark:text-slate-500">২ দিন আগে</div>
               </div>
 
-              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-1.5 text-xs">
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 space-y-1.5 text-xs">
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-slate-800">সালমা বেগম</span>
+                  <span className="font-bold text-slate-800 dark:text-slate-200">সালমা বেগম</span>
                   <span className="text-amber-500 font-bold">★★★★★ ৫/৫</span>
                 </div>
-                <p className="text-slate-600">
+                <p className="text-slate-600 dark:text-slate-300">
                   দোকানদার ভাই খুব আন্তরিক। সঠিক দামে তাজা পণ্য পাওয়া যায়।
                 </p>
-                <div className="text-[10px] text-slate-400">১ সপ্তাহ আগে</div>
+                <div className="text-[10px] text-slate-400 dark:text-slate-500">১ সপ্তাহ আগে</div>
               </div>
             </div>
           </div>
@@ -928,15 +932,15 @@ export const ShopkeeperDashboard: React.FC<ShopkeeperDashboardProps> = ({
           onClick={() => setIsAddProductModalOpen(false)}
         >
           <div
-            className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 relative animate-in zoom-in-95"
+            className="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800 relative animate-in zoom-in-95 text-slate-900 dark:text-white"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
-              <h3 className="font-black text-slate-900 text-base">দোকানে নতুন পণ্য যুক্ত করুন</h3>
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 mb-4">
+              <h3 className="font-black text-slate-900 dark:text-white text-base">দোকানে নতুন পণ্য যুক্ত করুন</h3>
               <button
                 type="button"
                 onClick={() => setIsAddProductModalOpen(false)}
-                className="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center cursor-pointer"
+                className="w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center cursor-pointer"
               >
                 ✕
               </button>
@@ -944,7 +948,7 @@ export const ShopkeeperDashboard: React.FC<ShopkeeperDashboardProps> = ({
 
             <form onSubmit={handleAddProduct} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                   পণ্যের নাম (যেমন: মিনিকেট চাল):
                 </label>
                 <input
@@ -953,13 +957,13 @@ export const ShopkeeperDashboard: React.FC<ShopkeeperDashboardProps> = ({
                   onChange={(e) => setNewProductName(e.target.value)}
                   placeholder="পণ্যের নাম বাংলায় লিখুন"
                   required
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#0B4A8A]"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#0B4A8A]"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                     দাম (৳ টাকা):
                   </label>
                   <input
@@ -968,18 +972,18 @@ export const ShopkeeperDashboard: React.FC<ShopkeeperDashboardProps> = ({
                     onChange={(e) => setNewProductPrice(e.target.value)}
                     placeholder="যেমন: ১২০"
                     required
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#0B4A8A]"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#0B4A8A]"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                     একক (Unit):
                   </label>
                   <select
                     value={newProductUnit}
                     onChange={(e) => setNewProductUnit(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#0B4A8A]"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#0B4A8A]"
                   >
                     <option value="কেজি">কেজি</option>
                     <option value="লিটার">লিটার</option>
@@ -999,7 +1003,7 @@ export const ShopkeeperDashboard: React.FC<ShopkeeperDashboardProps> = ({
                   onChange={(e) => setNewProductInStock(e.target.checked)}
                   className="w-4 h-4 accent-[#0B4A8A] rounded cursor-pointer"
                 />
-                <label htmlFor="stockCheck" className="text-xs font-semibold text-slate-700 cursor-pointer">
+                <label htmlFor="stockCheck" className="text-xs font-semibold text-slate-700 dark:text-slate-300 cursor-pointer">
                   বর্তমানে দোকানে পর্যাপ্ত ইন স্টক আছে
                 </label>
               </div>
@@ -1008,7 +1012,7 @@ export const ShopkeeperDashboard: React.FC<ShopkeeperDashboardProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsAddProductModalOpen(false)}
-                  className="flex-1 py-2.5 rounded-xl font-bold text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer"
+                  className="flex-1 py-2.5 rounded-xl font-bold text-xs bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 cursor-pointer"
                 >
                   বাতিল
                 </button>

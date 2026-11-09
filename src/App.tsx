@@ -15,6 +15,7 @@ import { ShopOwnerCTASection } from './components/ShopOwnerCTASection';
 import { Footer } from './components/Footer';
 
 import { ShopModal } from './components/ShopModal';
+import { ShopDetailPage } from './components/ShopDetailPage';
 import { ProductModal } from './components/ProductModal';
 import { AddShopModal } from './components/AddShopModal';
 import { LocationModal } from './components/LocationModal';
@@ -280,8 +281,15 @@ export default function App() {
     });
   }, [selectedCategory, searchQuery]);
 
+  // Navigation handlers
+  const handleNavigateView = (view: AppView) => {
+    setActiveShop(null);
+    setCurrentView(view);
+  };
+
   // Smooth scroll handler inside Home view
   const handleNavigateSection = (sectionId: string) => {
+    setActiveShop(null);
     setCurrentView('home');
     setTimeout(() => {
       const el = document.getElementById(sectionId);
@@ -292,6 +300,7 @@ export default function App() {
   };
 
   const handleSearch = (query: string) => {
+    setActiveShop(null);
     setSearchQuery(query);
     setCurrentView('shops');
   };
@@ -337,12 +346,22 @@ export default function App() {
         onOpenLocationModal={() => setIsLocationModalOpen(true)}
         onOpenAuthModal={(mode) => setAuthModalConfig({ isOpen: true, mode })}
         onOpenAddShopModal={() => setIsAddShopOpen(true)}
-        onNavigateView={(view) => setCurrentView(view)}
+        onNavigateView={handleNavigateView}
         onNavigateSection={handleNavigateSection}
       />
 
       {/* Conditional Dedicated Views Rendering */}
-      {currentView === 'dashboard' ? (
+      {activeShop ? (
+        <ShopDetailPage
+          shop={activeShop}
+          userCoordinates={currentCoordinates}
+          userArea={currentArea}
+          allShops={allShops}
+          onDetectLocation={detectLiveLocation}
+          onBack={() => setActiveShop(null)}
+          onSelectShop={(shop) => setActiveShop(shop)}
+        />
+      ) : currentView === 'dashboard' ? (
         myShop ? (
           <ShopkeeperDashboard
             shop={myShop}
@@ -483,18 +502,13 @@ export default function App() {
       />
 
       {/* Modals */}
-      <ShopModal
-        shop={activeShop}
-        userCoordinates={currentCoordinates}
-        userArea={currentArea}
-        onDetectLocation={detectLiveLocation}
-        onClose={() => setActiveShop(null)}
-      />
-
       <ProductModal
         product={activeProduct}
         onClose={() => setActiveProduct(null)}
-        onViewShop={handleSelectShopById}
+        onViewShop={(shopId) => {
+          setActiveProduct(null);
+          handleSelectShopById(shopId);
+        }}
       />
 
       <AddShopModal
@@ -503,6 +517,7 @@ export default function App() {
         onShopCreated={handleShopCreated}
         onGoToDashboard={(createdShop) => {
           handleShopCreated(createdShop);
+          setActiveShop(null);
           setCurrentView('dashboard');
         }}
       />
@@ -532,6 +547,7 @@ export default function App() {
               } catch (e) {}
             }
           }
+          setActiveShop(null);
           setCurrentView('dashboard');
         }}
       />
@@ -540,7 +556,7 @@ export default function App() {
       <BottomNavBar
         currentView={currentView}
         hasOwnedShop={!!myShop}
-        onNavigateView={(view) => setCurrentView(view)}
+        onNavigateView={handleNavigateView}
       />
 
     </div>

@@ -180,101 +180,120 @@ export const ShopsPage: React.FC<ShopsPageProps> = ({
               </span>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div className="space-y-4 sm:space-y-5 w-full">
               {filtered.map((shop) => (
                 <div
                   key={shop.id}
-                  className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden hover:shadow-xl hover:border-[#0B4A8A]/40 transition-all duration-300 flex flex-col justify-between group"
+                  onClick={() => onSelectShop(shop)}
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl overflow-hidden hover:shadow-xl hover:border-[#FF7900]/60 transition-all duration-300 flex flex-col sm:flex-row justify-between group cursor-pointer"
                 >
-                  <div>
-                    {/* Cover Header */}
-                    <div className="relative h-44 bg-slate-200 dark:bg-slate-800 overflow-hidden">
-                      <img
-                        src={shop.coverImage}
-                        alt={shop.nameBn}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        referrerPolicy="no-referrer"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-                      
-                      {/* Distance pill */}
-                      <div className="absolute top-3 right-3 bg-slate-900/90 text-white backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold border border-slate-700 flex items-center gap-1.5 shadow-md">
-                        <Navigation className="w-3.5 h-3.5 text-[#FF7900]" />
-                        <span>{shop.distance}</span>
-                      </div>
-
-                      {/* Status */}
-                      <div className="absolute top-3 left-3 flex items-center gap-1.5">
-                        <span
-                          className={`px-2.5 py-1 rounded-lg text-xs font-bold text-white shadow-md ${
-                            shop.isOpen ? 'bg-emerald-600' : 'bg-rose-600'
-                          }`}
-                        >
-                          {shop.isOpen ? 'খোলা আছে' : 'বন্ধ'}
-                        </span>
-                        {shop.deliveryAvailable && (
-                          <span className="px-2 py-1 rounded-lg text-[10px] font-bold bg-[#0B4A8A] text-white">
-                            হোম ডেলিভারি
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="absolute bottom-3 left-3 right-3 text-white">
-                        <div className="text-[11px] font-bold text-[#FF7900] uppercase tracking-wide">
-                          {shop.categoryBn}
-                        </div>
-                        <h3 className="text-lg font-bold line-clamp-1 drop-shadow-sm">
-                          {shop.nameBn}
-                        </h3>
-                      </div>
+                  {/* Cover Header */}
+                  <div className="relative w-full sm:w-64 md:w-80 h-48 sm:h-auto min-h-[190px] bg-slate-200 dark:bg-slate-800 shrink-0 overflow-hidden">
+                    <img
+                      src={shop.coverImage}
+                      alt={shop.nameBn}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      referrerPolicy="no-referrer"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+                    
+                    {/* Distance pill */}
+                    <div className="absolute top-3 right-3 bg-slate-900/90 text-white backdrop-blur-md px-3 py-1 rounded-xl text-xs font-bold border border-slate-700 flex items-center gap-1.5 shadow-md">
+                      <Navigation className="w-3.5 h-3.5 text-[#FF7900]" />
+                      <span>{shop.distance}</span>
                     </div>
 
-                    {/* Content */}
-                    <div className="p-4 space-y-2.5">
-                      <div className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300">
-                        <MapPin className="w-3.5 h-3.5 text-[#FF7900] shrink-0" />
-                        <span className="line-clamp-1">{shop.addressBn}</span>
+                    {/* Status */}
+                    <div className="absolute top-3 left-3 flex items-center gap-1.5">
+                      <span
+                        className={`px-2.5 py-1 rounded-xl text-xs font-bold text-white shadow-md ${
+                          shop.isOpen ? 'bg-emerald-600' : 'bg-rose-600'
+                        }`}
+                      >
+                        {shop.isOpen ? 'খোলা আছে' : 'বন্ধ'}
+                      </span>
+                      {shop.deliveryAvailable && (
+                        <span className="px-2.5 py-1 rounded-xl text-[11px] font-bold bg-[#0B4A8A] text-white">
+                          হোম ডেলিভারি
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="absolute bottom-3 left-3 right-3 text-white">
+                      <div className="text-[11px] font-bold text-[#FF7900] uppercase tracking-wide">
+                        {shop.categoryBn}
+                      </div>
+                      <h3 className="text-lg font-bold line-clamp-1 drop-shadow-sm">
+                        {shop.nameBn}
+                      </h3>
+                    </div>
+                  </div>
+
+                  {/* Content */}
+                  <div className="p-5 sm:p-6 flex-1 flex flex-col justify-between space-y-3">
+                    <div>
+                      <div className="flex items-center justify-between gap-2 mb-2">
+                        <div className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300">
+                          <MapPin className="w-4 h-4 text-[#FF7900] shrink-0" />
+                          <span className="line-clamp-1 font-semibold">{shop.addressBn}</span>
+                        </div>
+                        <div className="flex items-center text-amber-500 font-bold text-xs shrink-0">
+                          <Star className="w-3.5 h-3.5 fill-amber-500 mr-1" />
+                          <span>{shop.rating}</span>
+                          <span className="text-slate-400 font-normal ml-1">({shop.reviewCount})</span>
+                        </div>
                       </div>
 
                       {/* Featured Items list */}
                       {shop.featuredProducts && shop.featuredProducts.length > 0 && (
-                        <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 text-xs">
-                          <span className="text-[11px] text-slate-400 font-semibold block mb-1">
-                            মূল পণ্যসমূহ:
+                        <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 text-xs space-y-1.5">
+                          <span className="text-[11px] text-slate-400 font-semibold block">
+                            প্রধান পণ্যসমূহ ও মূল্য:
                           </span>
-                          <div className="flex flex-wrap gap-1.5">
+                          <div className="flex flex-wrap gap-2">
                             {shop.featuredProducts.map((p, idx) => (
                               <span
                                 key={idx}
-                                className="text-[11px] font-medium text-slate-700 dark:text-slate-200"
+                                className="text-xs font-semibold text-slate-800 dark:text-slate-200 bg-white dark:bg-slate-700/60 px-2 py-0.5 rounded-lg border border-slate-200/80 dark:border-slate-700"
                               >
-                                {p.nameBn} (৳{p.price})
-                                {idx < shop.featuredProducts.length - 1 && ' ·'}
+                                {p.nameBn} <span className="text-[#0B4A8A] dark:text-cyan-400 font-black">(৳{p.price})</span>
                               </span>
                             ))}
                           </div>
                         </div>
                       )}
                     </div>
-                  </div>
 
-                  {/* Actions */}
-                  <div className="p-4 pt-0 grid grid-cols-2 gap-2">
-                    <button
-                      onClick={() => onSelectShop(shop)}
-                      className="w-full py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1"
-                    >
-                      <span>দোকান দেখুন</span>
-                      <ChevronRight className="w-3.5 h-3.5" />
-                    </button>
+                    {/* Actions */}
+                    <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3">
+                      <span className="text-xs font-bold text-[#FF7900] group-hover:underline flex items-center gap-1">
+                        দোকান ও রুট ম্যাপ দেখুন
+                        <ChevronRight className="w-4 h-4" />
+                      </span>
 
-                    <a
-                      href={`tel:${shop.phone}`}
-                      className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-md shadow-emerald-900/20"
-                    >
-                      <Phone className="w-3.5 h-3.5" />
-                      <span>কল দিন</span>
-                    </a>
+                      <div className="flex items-center gap-2">
+                        <a
+                          href={`tel:${shop.phone}`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-sm"
+                        >
+                          <Phone className="w-3.5 h-3.5" />
+                          <span>কল দিন</span>
+                        </a>
+
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onSelectShop(shop);
+                          }}
+                          className="px-4 py-2 rounded-xl bg-[#0B4A8A] hover:bg-[#093a6d] text-white text-xs font-bold transition-all cursor-pointer flex items-center gap-1 shadow-sm"
+                        >
+                          <span>সম্পূর্ণ পেজ</span>
+                          <ChevronRight className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+
                   </div>
                 </div>
               ))}
