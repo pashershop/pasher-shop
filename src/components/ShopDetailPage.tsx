@@ -19,6 +19,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { Shop, ProductItem } from '../types';
+import { d1Service } from '../services/d1Service';
 import {
   calculateDistanceKm,
   formatDistanceBn,
@@ -61,9 +62,14 @@ export const ShopDetailPage: React.FC<ShopDetailPageProps> = ({
   const [isSubmitted, setIsSubmitted] = useState<boolean>(false);
   const [copiedToast, setCopiedToast] = useState<boolean>(false);
 
-  // Scroll to top when opening
+  // Scroll to top when opening & sync reviews from Cloudflare D1
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
+    d1Service.getReviews(shop.id).then((d1Reviews) => {
+      if (d1Reviews && d1Reviews.length > 0) {
+        setReviewsList(d1Reviews);
+      }
+    });
   }, [shop.id]);
 
   // Reviews List for this shop
@@ -124,6 +130,9 @@ export const ShopDetailPage: React.FC<ShopDetailPageProps> = ({
     try {
       localStorage.setItem(`pasher_reviews_${shop.id}`, JSON.stringify(updated));
     } catch (e) {}
+
+    // Persist to Cloudflare D1 SQL (DB: pasher-shop-db)
+    d1Service.submitReview(shop.id, newRev);
 
     setReviewerComment('');
     setReviewerName('');

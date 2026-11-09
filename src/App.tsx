@@ -29,6 +29,7 @@ import { BottomNavBar, AppView } from './components/BottomNavBar';
 import { FloatingLocationButton } from './components/FloatingLocationButton';
 
 import { SHOPS, FEATURED_PRODUCTS } from './data/mockData';
+import { d1Service } from './services/d1Service';
 import { Shop, ProductItem, CategoryId } from './types';
 import {
   findNearestLocation,
@@ -106,6 +107,15 @@ export default function App() {
     return allShops.find((s) => s.id === myShopId) || null;
   }, [allShops, myShopId]);
 
+  // Sync shops with Cloudflare D1 SQL database (DB: pasher-shop-db)
+  React.useEffect(() => {
+    d1Service.getAllShops().then((shopsFromD1) => {
+      if (shopsFromD1 && shopsFromD1.length > 0) {
+        setAllShops(shopsFromD1);
+      }
+    });
+  }, []);
+
   // Shop creation and update handlers
   const handleShopCreated = (newShop: Shop) => {
     setAllShops((prev) => {
@@ -119,6 +129,9 @@ export default function App() {
     try {
       localStorage.setItem('pasher_shop_my_shop_id', newShop.id);
     } catch (e) {}
+
+    // Persist to Cloudflare D1 SQL (DB: pasher-shop-db)
+    d1Service.createShop(newShop);
   };
 
   const handleUpdateShop = (updatedShop: Shop) => {
@@ -129,6 +142,9 @@ export default function App() {
       } catch (e) {}
       return updated;
     });
+
+    // Update in Cloudflare D1 SQL (DB: pasher-shop-db)
+    d1Service.updateShop(updatedShop);
   };
 
   const handleSelectDemoShop = () => {
