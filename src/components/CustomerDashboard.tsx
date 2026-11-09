@@ -45,43 +45,25 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'favorites' | 'calls' | 'searches'>('favorites');
 
-  // Demo call history data for customer
-  const callHistory = [
-    {
-      id: 'c1',
-      shopName: 'রহিম জেনারেল স্টোর',
-      shopPhone: '01711223344',
-      timeBn: 'আজ দুপুর ১২:৩০',
-      inquiry: 'মিনিকেট চাল ২৫ কেজি ও সরিষার তেল ৫ লিটার',
-      area: 'ধানমন্ডি, ঢাকা',
-    },
-    {
-      id: 'c2',
-      shopName: 'বিসমিল্লাহ্ ফার্মেসি',
-      shopPhone: '01812345678',
-      timeBn: 'গতকাল সন্ধ্যা ৬:১৫',
-      inquiry: 'নাপা এক্সট্যান্ড ও স্যাভলন অ্যান্টিসেপটিক ড্রপ',
-      area: 'ধানমন্ডি ৮/এ, ঢাকা',
-    },
-    {
-      id: 'c3',
-      shopName: 'ফ্রেশ ফ্রুটস ও ভেজিটেবল বিডি',
-      shopPhone: '01987654321',
-      timeBn: '২ দিন আগে',
-      inquiry: 'দেশি আম ও গাছ পাকা পেঁপে',
-      area: 'সোবহানবাগ, ঢাকা',
-    },
-  ];
+  // Customer state
+  const callHistory: {
+    id: string;
+    shopName: string;
+    shopPhone: string;
+    timeBn: string;
+    inquiry: string;
+    area: string;
+  }[] = [];
 
-  // Demo search history
-  const searchHistory = [
-    { id: 's1', termBn: 'মিনিকেট চাল ২৫ কেজি', lowestPrice: 1750, countShops: 4, area: 'ধানমন্ডি' },
-    { id: 's2', termBn: 'সরিষার তেল ১ লিটার', lowestPrice: 210, countShops: 6, area: 'ধানমন্ডি' },
-    { id: 's3', termBn: 'নাপা ৫শ মিগ্রা (পাতা)', lowestPrice: 12, countShops: 3, area: 'ধানমন্ডি' },
-  ];
+  const searchHistory: {
+    id: string;
+    termBn: string;
+    lowestPrice: number;
+    countShops: number;
+    area: string;
+  }[] = [];
 
-  // Favorite shops (first 3 shops as sample favorites)
-  const favoriteShops = SHOPS.slice(0, 3);
+  const favoriteShops: Shop[] = [];
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#030712] text-slate-900 dark:text-slate-100 pb-28 pt-4 px-4 sm:px-6 lg:px-8 transition-colors">
@@ -171,7 +153,7 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
                 <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">পছন্দের দোকান</span>
                 <Heart className="w-4 h-4 text-rose-500 fill-rose-500/20" />
               </div>
-              <div className="text-2xl font-black text-slate-900 dark:text-white mt-2">৩টি</div>
+              <div className="text-2xl font-black text-slate-900 dark:text-white mt-2">{favoriteShops.length}টি</div>
               <span className="text-[10px] text-slate-400 mt-1">নিকটস্থ প্রিয় শপ</span>
             </div>
 
@@ -180,7 +162,7 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
                 <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">সাম্প্রতিক কল</span>
                 <PhoneCall className="w-4 h-4 text-emerald-500" />
               </div>
-              <div className="text-2xl font-black text-slate-900 dark:text-white mt-2">৫টি</div>
+              <div className="text-2xl font-black text-slate-900 dark:text-white mt-2">{callHistory.length}টি</div>
               <span className="text-[10px] text-slate-400 mt-1">দোকানদারদের সাথে কল</span>
             </div>
 
@@ -189,7 +171,7 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
                 <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">দাম তুলনা সার্চ</span>
                 <Tag className="w-4 h-4 text-amber-500" />
               </div>
-              <div className="text-2xl font-black text-slate-900 dark:text-white mt-2">১২টি</div>
+              <div className="text-2xl font-black text-slate-900 dark:text-white mt-2">{searchHistory.length}টি</div>
               <span className="text-[10px] text-slate-400 mt-1">সর্বনিম্ন দাম যাচাই</span>
             </div>
 
@@ -260,64 +242,86 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
               </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 w-full">
-              {favoriteShops.map((shop) => (
-                <div
-                  key={shop.id}
-                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl overflow-hidden hover:border-[#FF7900]/50 transition-all shadow-md flex flex-col justify-between"
-                >
-                  <div>
-                    {/* Cover image & badge */}
-                    <div className="relative h-44 bg-slate-100 dark:bg-slate-800 overflow-hidden">
-                      <img
-                        src={shop.coverImage}
-                        alt={shop.nameBn}
-                        className="w-full h-full object-cover opacity-95 hover:scale-105 transition-transform duration-500"
-                        referrerPolicy="no-referrer"
-                      />
-                      <div className="absolute top-3 right-3 bg-white/95 dark:bg-slate-900/90 backdrop-blur-md px-2.5 py-1 rounded-xl text-xs font-bold text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 flex items-center gap-1 shadow-sm">
-                        <MapPin className="w-3.5 h-3.5 text-[#FF7900]" />
-                        <span>{shop.distance}</span>
-                      </div>
-                      <span
-                        className={`absolute bottom-3 left-3 px-2.5 py-1 rounded-lg text-xs font-bold ${
-                          shop.isOpen
-                            ? 'bg-emerald-600 text-white'
-                            : 'bg-rose-600 text-white'
-                        }`}
-                      >
-                        {shop.isOpen ? 'খোলা আছে' : 'বন্ধ'}
-                      </span>
-                    </div>
-
-                    {/* Content */}
-                    <div className="p-5 space-y-2">
-                      <div className="text-xs font-bold text-[#FF7900]">{shop.categoryBn}</div>
-                      <h4 className="text-lg font-black text-slate-900 dark:text-white line-clamp-1">{shop.nameBn}</h4>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-1">{shop.addressBn}</p>
-                    </div>
+            <div className="w-full">
+              {favoriteShops.length === 0 ? (
+                <div className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-8 sm:p-12 text-center space-y-4">
+                  <div className="w-14 h-14 rounded-2xl bg-rose-50 dark:bg-rose-950/40 text-rose-500 flex items-center justify-center mx-auto">
+                    <Heart className="w-7 h-7" />
                   </div>
-
-                  {/* Actions */}
-                  <div className="p-5 pt-0 grid grid-cols-2 gap-2.5">
-                    <button
-                      onClick={() => onOpenShopModal(shop)}
-                      className="w-full py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-white text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5"
-                    >
-                      <ExternalLink className="w-3.5 h-3.5 text-[#0B4A8A] dark:text-cyan-400" />
-                      <span>দোকান দেখুন</span>
-                    </button>
-
-                    <a
-                      href={`tel:${shop.phone}`}
-                      className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-sm"
-                    >
-                      <Phone className="w-3.5 h-3.5" />
-                      <span>কল দিন</span>
-                    </a>
-                  </div>
+                  <h4 className="text-base font-bold text-slate-800 dark:text-slate-200">
+                    এখনো কোনো পছন্দের দোকান সংরক্ষণ করা হয়নি
+                  </h4>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
+                    আপনার এলাকার দোকানগুলো ঘুরে দেখুন এবং সহজেই আপনার প্রিয় দোকান বুকমার্ক করুন
+                  </p>
+                  <button
+                    onClick={onNavigateToShops}
+                    className="px-5 py-2.5 rounded-xl bg-[#0B4A8A] text-white text-xs font-bold hover:bg-[#093a6d] transition-all cursor-pointer"
+                  >
+                    আশেপাশের দোকানগুলো দেখুন
+                  </button>
                 </div>
-              ))}
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 w-full">
+                  {favoriteShops.map((shop) => (
+                    <div
+                      key={shop.id}
+                      className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl overflow-hidden hover:border-[#FF7900]/50 transition-all shadow-md flex flex-col justify-between"
+                    >
+                      <div>
+                        {/* Cover image & badge */}
+                        <div className="relative h-44 bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                          <img
+                            src={shop.coverImage}
+                            alt={shop.nameBn}
+                            className="w-full h-full object-cover opacity-95 hover:scale-105 transition-transform duration-500"
+                            referrerPolicy="no-referrer"
+                          />
+                          <div className="absolute top-3 right-3 bg-white/95 dark:bg-slate-900/90 backdrop-blur-md px-2.5 py-1 rounded-xl text-xs font-bold text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 flex items-center gap-1 shadow-sm">
+                            <MapPin className="w-3.5 h-3.5 text-[#FF7900]" />
+                            <span>{shop.distance}</span>
+                          </div>
+                          <span
+                            className={`absolute bottom-3 left-3 px-2.5 py-1 rounded-lg text-xs font-bold ${
+                              shop.isOpen
+                                ? 'bg-emerald-600 text-white'
+                                : 'bg-rose-600 text-white'
+                            }`}
+                          >
+                            {shop.isOpen ? 'খোলা আছে' : 'বন্ধ'}
+                          </span>
+                        </div>
+
+                        {/* Content */}
+                        <div className="p-5 space-y-2">
+                          <div className="text-xs font-bold text-[#FF7900]">{shop.categoryBn}</div>
+                          <h4 className="text-lg font-black text-slate-900 dark:text-white line-clamp-1">{shop.nameBn}</h4>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-1">{shop.addressBn}</p>
+                        </div>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="p-5 pt-0 grid grid-cols-2 gap-2.5">
+                        <button
+                          onClick={() => onOpenShopModal(shop)}
+                          className="w-full py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-white text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5 text-[#0B4A8A] dark:text-cyan-400" />
+                          <span>দোকান দেখুন</span>
+                        </button>
+
+                        <a
+                          href={`tel:${shop.phone}`}
+                          className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-sm"
+                        >
+                          <Phone className="w-3.5 h-3.5" />
+                          <span>কল দিন</span>
+                        </a>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -330,37 +334,49 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
               <span>সাম্প্রতিক কল ও অর্ডারের ইতিহাস</span>
             </h3>
 
-            <div className="divide-y divide-slate-100 dark:divide-slate-800">
-              {callHistory.map((item) => (
-                <div key={item.id} className="py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-slate-900 dark:text-white text-sm">{item.shopName}</span>
-                      <span className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1">
-                        <Clock className="w-3 h-3 text-slate-400" />
-                        {item.timeBn}
-                      </span>
-                    </div>
-                    <p className="text-xs text-slate-600 dark:text-slate-300">
-                      <span className="text-slate-400">পণ্য ইনকোয়ারি: </span>
-                      {item.inquiry}
-                    </p>
-                    <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1">
-                      <MapPin className="w-3 h-3 text-[#FF7900]" />
-                      {item.area}
-                    </div>
-                  </div>
-
-                  <a
-                    href={`tel:${item.shopPhone}`}
-                    className="shrink-0 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
-                  >
-                    <Phone className="w-3.5 h-3.5" />
-                    <span>পুনরায় কল দিন</span>
-                  </a>
+            {callHistory.length === 0 ? (
+              <div className="p-8 sm:p-12 text-center space-y-3">
+                <div className="w-14 h-14 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-500 flex items-center justify-center mx-auto">
+                  <PhoneCall className="w-7 h-7" />
                 </div>
-              ))}
-            </div>
+                <h4 className="text-base font-bold text-slate-800 dark:text-slate-200">কোনো সাম্প্রতিক কলের ইতিহাস নেই</h4>
+                <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
+                  দোকানগুলোতে কল বা পণ্যের অর্ডার প্রদান করলে তা এখানে সরাসরি সংরক্ষিত থাকবে
+                </p>
+              </div>
+            ) : (
+              <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                {callHistory.map((item) => (
+                  <div key={item.id} className="py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-slate-900 dark:text-white text-sm">{item.shopName}</span>
+                        <span className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                          <Clock className="w-3 h-3 text-slate-400" />
+                          {item.timeBn}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-600 dark:text-slate-300">
+                        <span className="text-slate-400">পণ্য ইনকোয়ারি: </span>
+                        {item.inquiry}
+                      </p>
+                      <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                        <MapPin className="w-3 h-3 text-[#FF7900]" />
+                        {item.area}
+                      </div>
+                    </div>
+
+                    <a
+                      href={`tel:${item.shopPhone}`}
+                      className="shrink-0 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
+                    >
+                      <Phone className="w-3.5 h-3.5" />
+                      <span>পুনরায় কল দিন</span>
+                    </a>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -380,21 +396,39 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
               </button>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 w-full">
-              {searchHistory.map((sh) => (
-                <div key={sh.id} className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 space-y-2">
-                  <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">{sh.area} এলাকা</div>
-                  <div className="font-bold text-slate-900 dark:text-white text-sm">{sh.termBn}</div>
-                  <div className="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-slate-700/60 text-xs">
-                    <span className="text-slate-500 dark:text-slate-400">সর্বনিম্ন দাম:</span>
-                    <span className="text-emerald-600 dark:text-emerald-400 font-black">৳{sh.lowestPrice}</span>
-                  </div>
-                  <div className="text-[10px] text-slate-400 text-right">
-                    {sh.countShops}টি স্টোরে অ্যাভেইলএবল
-                  </div>
+            {searchHistory.length === 0 ? (
+              <div className="p-8 sm:p-12 text-center space-y-3">
+                <div className="w-14 h-14 rounded-2xl bg-amber-50 dark:bg-amber-950/40 text-amber-500 flex items-center justify-center mx-auto">
+                  <Search className="w-7 h-7" />
                 </div>
-              ))}
-            </div>
+                <h4 className="text-base font-bold text-slate-800 dark:text-slate-200">কোনো সাম্প্রতিক মূল্য যাচাই ইতিহাস নেই</h4>
+                <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
+                  বিভিন্ন পণ্যের দাম তুলনা করতে অনুসন্ধান করুন এবং সবচেয়ে কম দামে কেনাকাটা করুন
+                </p>
+                <button
+                  onClick={onNavigateToPriceCompare}
+                  className="px-5 py-2.5 rounded-xl bg-[#0B4A8A] text-white text-xs font-bold hover:bg-[#093a6d] transition-all cursor-pointer"
+                >
+                  মূল্য তুলনা পেজে যান
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 w-full">
+                {searchHistory.map((sh) => (
+                  <div key={sh.id} className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 space-y-2">
+                    <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">{sh.area} এলাকা</div>
+                    <div className="font-bold text-slate-900 dark:text-white text-sm">{sh.termBn}</div>
+                    <div className="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-slate-700/60 text-xs">
+                      <span className="text-slate-500 dark:text-slate-400">সর্বনিম্ন দাম:</span>
+                      <span className="text-emerald-600 dark:text-emerald-400 font-black">৳{sh.lowestPrice}</span>
+                    </div>
+                    <div className="text-[10px] text-slate-400 text-right">
+                      {sh.countShops}টি স্টোরে অ্যাভেইলএবল
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 

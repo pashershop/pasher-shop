@@ -79,23 +79,7 @@ export const ShopDetailPage: React.FC<ShopDetailPageProps> = ({
       if (saved) return JSON.parse(saved);
     } catch (e) {}
 
-    // Default sample reviews
-    return [
-      {
-        id: 'r1',
-        customerName: 'তানভীর আহমেদ',
-        rating: 5,
-        comment: 'দোকানদারের ব্যবহার খুব ভালো এবং প্রতিটি পণ্যের দাম সঠিক ছিল। চমৎকার সার্ভিস!',
-        dateBn: '২ দিন আগে',
-      },
-      {
-        id: 'r2',
-        customerName: 'সাদিয়া তাসনিম',
-        rating: 5,
-        comment: 'ফোন দেওয়ার ১০ মিনিটের মধ্যে ডেলিভারি পেয়েছি। খুব নির্ভরযোগ্য শপ।',
-        dateBn: '১ সপ্তাহ আগে',
-      },
-    ];
+    return [];
   });
 
   // Calculate live distance
@@ -540,40 +524,46 @@ export const ShopDetailPage: React.FC<ShopDetailPageProps> = ({
 
               {/* Review History Cards */}
               <div className="space-y-3">
-                {reviewsList.map((rev) => (
-                  <div
-                    key={rev.id}
-                    className="p-4 rounded-2xl bg-slate-50/80 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-800 space-y-1.5"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-full bg-[#0B4A8A]/10 text-[#0B4A8A] dark:text-cyan-400 flex items-center justify-center font-bold text-xs">
-                          {rev.customerName.charAt(0)}
-                        </div>
-                        <span className="text-xs font-bold text-slate-900 dark:text-white">
-                          {rev.customerName}
-                        </span>
-                        <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold bg-emerald-50 dark:bg-emerald-950/60 px-1.5 py-0.2 rounded border border-emerald-200 dark:border-emerald-800">
-                          ভেরিফাইড ক্রেতা
-                        </span>
-                      </div>
-
-                      <div className="flex items-center gap-1">
-                        {[...Array(rev.rating)].map((_, i) => (
-                          <Star key={i} className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
-                        ))}
-                      </div>
-                    </div>
-
-                    <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed pl-9">
-                      "{rev.comment}"
-                    </p>
-
-                    <div className="text-[10px] text-slate-400 text-right">
-                      {rev.dateBn}
-                    </div>
+                {reviewsList.length === 0 ? (
+                  <div className="p-6 text-center text-slate-500 dark:text-slate-400 text-xs bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800">
+                    এখনও কোনো রিভিউ যুক্ত হয়নি। আপনার মতামত লিখে প্রথম রিভিউটি প্রদান করুন!
                   </div>
-                ))}
+                ) : (
+                  reviewsList.map((rev) => (
+                    <div
+                      key={rev.id}
+                      className="p-4 rounded-2xl bg-slate-50/80 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-800 space-y-1.5"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-7 h-7 rounded-full bg-[#0B4A8A]/10 text-[#0B4A8A] dark:text-cyan-400 flex items-center justify-center font-bold text-xs">
+                            {rev.customerName.charAt(0)}
+                          </div>
+                          <span className="text-xs font-bold text-slate-900 dark:text-white">
+                            {rev.customerName}
+                          </span>
+                          <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold bg-emerald-50 dark:bg-emerald-950/60 px-1.5 py-0.2 rounded border border-emerald-200 dark:border-emerald-800">
+                            ভেরিফাইড ক্রেতা
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-1">
+                          {[...Array(rev.rating)].map((_, i) => (
+                            <Star key={i} className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+                          ))}
+                        </div>
+                      </div>
+
+                      <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed pl-9">
+                        "{rev.comment}"
+                      </p>
+
+                      <div className="text-[10px] text-slate-400 text-right">
+                        {rev.dateBn}
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
 

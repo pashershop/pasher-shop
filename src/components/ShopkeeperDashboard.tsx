@@ -71,39 +71,8 @@ const DASHBOARD_BANNER_PRESETS = [
   },
 ];
 
-// Initial mock customer inquiries / orders for newly loaded dashboard
-const INITIAL_INQUIRIES: ShopInquiry[] = [
-  {
-    id: 'inq-1',
-    customerName: 'তানভীর আহমেদ',
-    customerPhone: '০১৭১২-৩৪৫৬৭৮',
-    items: 'বাসমতি চাল ৫ কেজি, সয়াবিন তেল ২ লিটার',
-    totalAmount: 1150,
-    timeBn: '১০ মিনিট আগে',
-    status: 'নতুন',
-    type: 'order',
-  },
-  {
-    id: 'inq-2',
-    customerName: 'ফারহানা ইয়াসমিন',
-    customerPhone: '০১৯১১-২২৩৩৪৪',
-    items: 'দোকান খোলা আছে কিনা ও হোম ডেলিভারি হবে কিনা জানতে চেয়েছিলেন',
-    totalAmount: 0,
-    timeBn: '৩৫ মিনিট আগে',
-    status: 'সম্পন্ন',
-    type: 'call',
-  },
-  {
-    id: 'inq-3',
-    customerName: 'মোঃ রাশেদুল ইসলাম',
-    customerPhone: '০১৮১৮-৭৭৮৮৯৯',
-    items: 'মসুর ডাল ১ কেজি, চিনি ২ কেজি, ডিম ১ ডজন',
-    totalAmount: 540,
-    timeBn: '২ ঘণ্টা আগে',
-    status: 'প্রসেসিং',
-    type: 'order',
-  },
-];
+// Initial customer inquiries / orders
+const INITIAL_INQUIRIES: ShopInquiry[] = [];
 
 export const ShopkeeperDashboard: React.FC<ShopkeeperDashboardProps> = ({
   shop,
@@ -165,7 +134,7 @@ export const ShopkeeperDashboard: React.FC<ShopkeeperDashboardProps> = ({
               আপনার কোনো দোকান এখনো যুক্ত নেই!
             </h2>
             <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed max-w-sm mx-auto">
-              দোকানদার ড্যাশবোর্ড কেবল নিবন্ধিত দোকানদারদের জন্য। আপনার দোকানটি যুক্ত করুন অথবা একটি ডেমো দোকান দিয়ে ড্যাশবোর্ড পরীক্ষা করুন।
+              দোকানদার ড্যাশবোর্ড কেবল নিবন্ধিত দোকানদারদের জন্য। আপনার দোকানটি যুক্ত করুন এবং পণ্য ও অর্ডার পরিচালনা শুরু করুন।
             </p>
           </div>
 
@@ -177,16 +146,6 @@ export const ShopkeeperDashboard: React.FC<ShopkeeperDashboardProps> = ({
               <Plus className="w-4 h-4 text-[#FF7900]" />
               <span>বিনামূল্যে আপনার দোকান যুক্ত করুন</span>
             </button>
-
-            {onSelectDemoShop && (
-              <button
-                onClick={onSelectDemoShop}
-                className="w-full py-3 px-6 rounded-2xl font-bold text-xs text-[#0B4A8A] dark:text-cyan-400 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 transition-all cursor-pointer flex items-center justify-center gap-2"
-              >
-                <Sparkles className="w-4 h-4 text-[#FF7900]" />
-                <span>ডেমো দোকান দিয়ে ড্যাশবোর্ড ডেমো দেখুন</span>
-              </button>
-            )}
 
             <button
               onClick={onBackToHome}
@@ -415,7 +374,7 @@ export const ShopkeeperDashboard: React.FC<ShopkeeperDashboardProps> = ({
             <div>
               <div className="text-[11px] font-bold text-slate-400 dark:text-slate-500">আজকের দোকান ভিউ</div>
               <div className="text-lg sm:text-xl font-black text-slate-900 dark:text-white">
-                {toBnNumber(142)} বার
+                {toBnNumber(0)} বার
               </div>
             </div>
           </div>
@@ -428,7 +387,7 @@ export const ShopkeeperDashboard: React.FC<ShopkeeperDashboardProps> = ({
             <div>
               <div className="text-[11px] font-bold text-slate-400 dark:text-slate-500">সরাসরি কল অনুসন্ধান</div>
               <div className="text-lg sm:text-xl font-black text-slate-900 dark:text-white">
-                {toBnNumber(18)} টি
+                {toBnNumber(0)} টি
               </div>
             </div>
           </div>
@@ -441,7 +400,7 @@ export const ShopkeeperDashboard: React.FC<ShopkeeperDashboardProps> = ({
             <div>
               <div className="text-[11px] font-bold text-slate-400 dark:text-slate-500">ম্যাপে রুট দেখা হয়েছে</div>
               <div className="text-lg sm:text-xl font-black text-slate-900 dark:text-white">
-                {toBnNumber(39)} বার
+                {toBnNumber(0)} বার
               </div>
             </div>
           </div>
@@ -540,69 +499,81 @@ export const ShopkeeperDashboard: React.FC<ShopkeeperDashboardProps> = ({
 
             {/* Products Table Card (Full Width) */}
             <div className="w-full bg-white dark:bg-slate-900/90 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden">
-              <div className="divide-y divide-slate-100 dark:divide-slate-800">
-                {products.map((item, idx) => (
-                  <div
-                    key={item.id}
-                    className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-orange-50 dark:bg-orange-950/40 border border-orange-200/60 dark:border-orange-800/60 text-[#FF7900] flex items-center justify-center font-bold text-sm shrink-0">
-                        {toBnNumber(idx + 1)}
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-slate-900 dark:text-white text-sm">{item.nameBn}</h4>
-                        <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                          <span>একক: {item.unit}</span>
-                          <span>·</span>
-                          <span
-                            className={`px-2 py-0.2 rounded-md font-semibold text-[10px] ${
-                              item.inStock
-                                ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
-                                : 'bg-red-50 dark:bg-red-950/60 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800'
-                            }`}
-                          >
-                            {item.inStock ? 'ইন স্টক' : 'স্টক শেষ'}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4 border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-100 dark:border-slate-800">
-                      <div className="text-left sm:text-right">
-                        <div className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">নির্ধারিত দাম</div>
-                        <div className="text-base font-black text-[#0B4A8A] dark:text-cyan-400">
-                          ৳{toBnNumber(item.price)}
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => handleToggleProductStock(item.id)}
-                          className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-colors cursor-pointer ${
-                            item.inStock
-                              ? 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700'
-                              : 'bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
-                          }`}
-                          title="স্টক স্ট্যাটাস পরিবর্তন"
-                        >
-                          {item.inStock ? 'স্টক শেষ চিহ্নিত করুন' : 'ইন স্টক করুন'}
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteProduct(item.id)}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors cursor-pointer"
-                          title="পণ্যটি মুছে ফেলুন"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
+              {products.length === 0 ? (
+                <div className="p-8 text-center space-y-3">
+                  <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center mx-auto">
+                    <Package className="w-6 h-6" />
                   </div>
-                ))}
-              </div>
+                  <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200">এখনো কোনো পণ্য যুক্ত করা হয়নি</h4>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
+                    উপরের "নতুন পণ্য যুক্ত করুন" বাটনে ক্লিক করে সহজেই আপনার দোকানের পণ্য ও বিক্রয়মূল্য যুক্ত করুন
+                  </p>
+                </div>
+              ) : (
+                <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                  {products.map((item, idx) => (
+                    <div
+                      key={item.id}
+                      className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-orange-50 dark:bg-orange-950/40 border border-orange-200/60 dark:border-orange-800/60 text-[#FF7900] flex items-center justify-center font-bold text-sm shrink-0">
+                          {toBnNumber(idx + 1)}
+                        </div>
+                        <div>
+                          <h4 className="font-bold text-slate-900 dark:text-white text-sm">{item.nameBn}</h4>
+                          <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                            <span>একক: {item.unit}</span>
+                            <span>·</span>
+                            <span
+                              className={`px-2 py-0.2 rounded-md font-semibold text-[10px] ${
+                                item.inStock
+                                  ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
+                                  : 'bg-red-50 dark:bg-red-950/60 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800'
+                              }`}
+                            >
+                              {item.inStock ? 'ইন স্টক' : 'স্টক শেষ'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4 border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-100 dark:border-slate-800">
+                        <div className="text-left sm:text-right">
+                          <div className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">নির্ধারিত দাম</div>
+                          <div className="text-base font-black text-[#0B4A8A] dark:text-cyan-400">
+                            ৳{toBnNumber(item.price)}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => handleToggleProductStock(item.id)}
+                            className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-colors cursor-pointer ${
+                              item.inStock
+                                ? 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700'
+                                : 'bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
+                            }`}
+                            title="স্টক স্ট্যাটাস পরিবর্তন"
+                          >
+                            {item.inStock ? 'স্টক শেষ চিহ্নিত করুন' : 'ইন স্টক করুন'}
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteProduct(item.id)}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors cursor-pointer"
+                            title="পণ্যটি মুছে ফেলুন"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -618,71 +589,83 @@ export const ShopkeeperDashboard: React.FC<ShopkeeperDashboardProps> = ({
             </div>
 
             <div className="w-full space-y-3">
-              {inquiries.map((inq) => (
-                <div
-                  key={inq.id}
-                  className="w-full bg-white dark:bg-slate-900/90 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs space-y-3"
-                >
-                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-2.5">
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${
-                          inq.status === 'নতুন'
-                            ? 'bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 animate-pulse'
-                            : inq.status === 'প্রসেসিং'
-                            ? 'bg-blue-100 dark:bg-blue-950/80 text-blue-800 dark:text-blue-300'
-                            : 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300'
-                        }`}
-                      >
-                        ● {inq.status}
-                      </span>
-                      <span className="font-bold text-sm text-slate-900 dark:text-white">{inq.customerName}</span>
-                      <span className="text-xs text-slate-400 dark:text-slate-500">({inq.timeBn})</span>
-                    </div>
-
-                    <a
-                      href={`tel:${inq.customerPhone.replace(/[^0-9]/g, '')}`}
-                      className="px-3 py-1 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 text-emerald-700 dark:text-emerald-300 text-xs font-bold border border-emerald-200 dark:border-emerald-800 flex items-center gap-1.5 transition-colors"
-                    >
-                      <Phone className="w-3.5 h-3.5" />
-                      <span>{inq.customerPhone}</span>
-                    </a>
+              {inquiries.length === 0 ? (
+                <div className="w-full bg-white dark:bg-slate-900/90 p-8 sm:p-12 rounded-2xl border border-slate-200 dark:border-slate-800 text-center space-y-3">
+                  <div className="w-14 h-14 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center mx-auto">
+                    <ShoppingBag className="w-7 h-7" />
                   </div>
-
-                  <div className="text-xs text-slate-700 dark:text-slate-300">
-                    <span className="font-bold text-slate-900 dark:text-white">অনুরোধ/অর্ডার বিবরণ: </span>
-                    <span>{inq.items}</span>
-                  </div>
-
-                  {inq.totalAmount > 0 && (
-                    <div className="text-xs font-bold text-[#0B4A8A] dark:text-cyan-400">
-                      আনুমানিক মূল্য: ৳{toBnNumber(inq.totalAmount)}
-                    </div>
-                  )}
-
-                  {/* Action buttons */}
-                  <div className="flex items-center gap-2 pt-1">
-                    {inq.status !== 'সম্পন্ন' && (
-                      <button
-                        type="button"
-                        onClick={() => handleUpdateInquiryStatus(inq.id, 'সম্পন্ন')}
-                        className="px-3 py-1.5 rounded-lg bg-[#0B4A8A] text-white text-xs font-bold hover:bg-[#093a6d] transition-colors cursor-pointer"
-                      >
-                        সম্পন্ন চিহ্নিত করুন
-                      </button>
-                    )}
-                    {inq.status === 'নতুন' && (
-                      <button
-                        type="button"
-                        onClick={() => handleUpdateInquiryStatus(inq.id, 'প্রসেসিং')}
-                        className="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer"
-                      >
-                        প্রসেসিং হচ্ছে
-                      </button>
-                    )}
-                  </div>
+                  <h4 className="text-base font-bold text-slate-800 dark:text-slate-200">বর্তমানে কোনো অর্ডার বা অনুসন্ধান নেই</h4>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
+                    ক্রেতারা আপনার দোকানে কল বা পণ্যের অর্ডার প্রদান করলে সাথে সাথে এখানে প্রদর্শিত হবে
+                  </p>
                 </div>
-              ))}
+              ) : (
+                inquiries.map((inq) => (
+                  <div
+                    key={inq.id}
+                    className="w-full bg-white dark:bg-slate-900/90 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs space-y-3"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-2.5">
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${
+                            inq.status === 'নতুন'
+                              ? 'bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 animate-pulse'
+                              : inq.status === 'প্রসেসিং'
+                              ? 'bg-blue-100 dark:bg-blue-950/80 text-blue-800 dark:text-blue-300'
+                              : 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300'
+                          }`}
+                        >
+                          ● {inq.status}
+                        </span>
+                        <span className="font-bold text-sm text-slate-900 dark:text-white">{inq.customerName}</span>
+                        <span className="text-xs text-slate-400 dark:text-slate-500">({inq.timeBn})</span>
+                      </div>
+
+                      <a
+                        href={`tel:${inq.customerPhone.replace(/[^0-9]/g, '')}`}
+                        className="px-3 py-1 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 text-emerald-700 dark:text-emerald-300 text-xs font-bold border border-emerald-200 dark:border-emerald-800 flex items-center gap-1.5 transition-colors"
+                      >
+                        <Phone className="w-3.5 h-3.5" />
+                        <span>{inq.customerPhone}</span>
+                      </a>
+                    </div>
+
+                    <div className="text-xs text-slate-700 dark:text-slate-300">
+                      <span className="font-bold text-slate-900 dark:text-white">অনুরোধ/অর্ডার বিবরণ: </span>
+                      <span>{inq.items}</span>
+                    </div>
+
+                    {inq.totalAmount > 0 && (
+                      <div className="text-xs font-bold text-[#0B4A8A] dark:text-cyan-400">
+                        আনুমানিক মূল্য: ৳{toBnNumber(inq.totalAmount)}
+                      </div>
+                    )}
+
+                    {/* Action buttons */}
+                    <div className="flex items-center gap-2 pt-1">
+                      {inq.status !== 'সম্পন্ন' && (
+                        <button
+                          type="button"
+                          onClick={() => handleUpdateInquiryStatus(inq.id, 'সম্পন্ন')}
+                          className="px-3 py-1.5 rounded-lg bg-[#0B4A8A] text-white text-xs font-bold hover:bg-[#093a6d] transition-colors cursor-pointer"
+                        >
+                          সম্পন্ন চিহ্নিত করুন
+                        </button>
+                      )}
+                      {inq.status === 'নতুন' && (
+                        <button
+                          type="button"
+                          onClick={() => handleUpdateInquiryStatus(inq.id, 'প্রসেসিং')}
+                          className="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+                        >
+                          প্রসেসিং হচ্ছে
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         )}
@@ -899,26 +882,14 @@ export const ShopkeeperDashboard: React.FC<ShopkeeperDashboardProps> = ({
             </div>
 
             <div className="space-y-3">
-              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 space-y-1.5 text-xs">
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-slate-800 dark:text-slate-200">রাকিবুল হাসান (ধানমন্ডি)</span>
-                  <span className="text-amber-500 font-bold">★★★★★ ৫/৫</span>
+              <div className="w-full p-8 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 text-center space-y-2">
+                <div className="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-950/40 text-amber-500 flex items-center justify-center mx-auto">
+                  <Star className="w-6 h-6" />
                 </div>
-                <p className="text-slate-600 dark:text-slate-300">
-                  খুবই দ্রুত হোম ডেলিভারি দিয়েছেন। পণ্যের মান ও দাম দুটোই সেরা ছিল।
+                <h4 className="text-base font-bold text-slate-800 dark:text-slate-200">বর্তমানে কোনো গ্রাহক রিভিউ নেই</h4>
+                <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
+                  ক্রেতারা আপনার দোকান থেকে কেনাকাটা করে রিভিউ ও রেটিং প্রদান করলে তা এখানে সরাসরি প্রদর্শিত হবে
                 </p>
-                <div className="text-[10px] text-slate-400 dark:text-slate-500">২ দিন আগে</div>
-              </div>
-
-              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 space-y-1.5 text-xs">
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-slate-800 dark:text-slate-200">সালমা বেগম</span>
-                  <span className="text-amber-500 font-bold">★★★★★ ৫/৫</span>
-                </div>
-                <p className="text-slate-600 dark:text-slate-300">
-                  দোকানদার ভাই খুব আন্তরিক। সঠিক দামে তাজা পণ্য পাওয়া যায়।
-                </p>
-                <div className="text-[10px] text-slate-400 dark:text-slate-500">১ সপ্তাহ আগে</div>
               </div>
             </div>
           </div>

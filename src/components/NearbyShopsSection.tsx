@@ -31,9 +31,6 @@ export const NearbyShopsSection: React.FC<NearbyShopsSectionProps> = ({
               <span className="text-xs font-bold text-[#0B4A8A] dark:text-cyan-400 tracking-wider uppercase">
                 লোকাল ডিরেক্টরি
               </span>
-              <span className="text-[11px] font-medium text-slate-400 bg-slate-100 dark:bg-slate-900 px-2 py-0.5 rounded">
-                ডেমো ডেটা (Sample Data)
-              </span>
             </div>
             <div className="flex flex-wrap items-center gap-2 mt-1">
               <h2 className="text-2xl sm:text-3xl font-extrabold text-[#171717] dark:text-white tracking-tight">
