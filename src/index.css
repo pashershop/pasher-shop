@@ -1,0 +1,49 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: 'Hind Siliguri', 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  --font-display: 'Plus Jakarta Sans', 'Hind Siliguri', system-ui, sans-serif;
+  --color-brand-orange: #FF7900;
+  --color-brand-blue: #0B4A8A;
+  --color-brand-bg: #F8FAFC;
+  --color-brand-text: #171717;
+  --color-brand-border: #E5E7EB;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: #F8FAFC;
+  color: #171717;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+.dark body {
+  background-color: #030712;
+  color: #F3F4F6;
+}
+
+/* Custom scrollbar for clean horizontal cards */
+::-webkit-scrollbar {
+  height: 6px;
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #F1F5F9;
+}
+.dark ::-webkit-scrollbar-track {
+  background: #030712;
+}
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 9999px;
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: #1F2937;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+}

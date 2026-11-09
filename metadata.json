@@ -1,0 +1,6 @@
+{
+  "name": "Pasher Shop",
+  "description": "বাংলাদেশের আধুনিক লোকাল শপিং মার্কেটপ্লেস — আপনার পাশের দোকান, এখন অনলাইনে। কাছের দোকান খুঁজুন, পণ্যের দাম তুলনা করুন।",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
