@@ -254,9 +254,27 @@ export const NearbyShopsMap: React.FC<NearbyShopsMapProps> = ({
             </Map>
           </APIProvider>
         ) : (
-          <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center text-slate-500">
-            <MapPin className="w-8 h-8 text-slate-400 mb-2" />
-            <p className="text-sm font-semibold">Google Maps API কী কনফিগার করা হচ্ছে...</p>
+          <div className="w-full h-full relative flex flex-col items-center justify-center bg-slate-100">
+            <iframe
+              title="Nearby Shops Map View"
+              width="100%"
+              height="100%"
+              className="w-full h-full border-0 pointer-events-auto"
+              loading="lazy"
+              src={`https://www.openstreetmap.org/export/embed.html?bbox=${center.lng - 0.035}%2C${center.lat - 0.025}%2C${center.lng + 0.035}%2C${center.lat + 0.025}&layer=mapnik&marker=${center.lat}%2C${center.lng}`}
+            />
+            <div className="absolute top-3 left-3 bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-200 shadow-sm text-xs font-bold text-[#0B4A8A] flex items-center gap-1.5 z-10">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span>লাইভ ম্যাপ প্রিভিউ ({currentArea})</span>
+            </div>
+            <a
+              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`দোকান সমূহ ${currentArea}`)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="absolute top-3 right-3 bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-200 shadow-sm text-xs font-bold text-[#FF7900] hover:text-[#e06b00] flex items-center gap-1.5 z-10"
+            >
+              <span>Google Maps-এ খুলুন</span>
+            </a>
           </div>
         )}
 

@@ -72,7 +72,7 @@ function formatGoogleManeuverToBn(instructionHtml: string): string {
   return toBnNumber(bn);
 }
 
-// Subcomponent that manages DirectionsService & DirectionsRenderer inside the Map
+// Subcomponent that manages route rendering using modern Routes API (Route.computeRoutes)
 interface DirectionsRouteHandlerProps {
   origin: { lat: number; lng: number };
   destination: { lat: number; lng: number };
@@ -88,74 +88,144 @@ const DirectionsRouteHandler: React.FC<DirectionsRouteHandlerProps> = ({
 }) => {
   const map = useMap();
   const routesLib = useMapsLibrary('routes');
-  const directionsRendererRef = useRef<google.maps.DirectionsRenderer | null>(null);
+  const polylinesRef = useRef<google.maps.Polyline[]>([]);
 
   useEffect(() => {
-    if (!routesLib || !map) return;
+    if (!routesLib || !map || !origin || !destination) return;
 
-    if (!directionsRendererRef.current) {
-      directionsRendererRef.current = new routesLib.DirectionsRenderer({
-        map,
-        suppressMarkers: true, // We provide custom brand AdvancedMarkers
-        preserveViewport: false,
-        polylineOptions: {
-          strokeColor: '#FF7900',
-          strokeWeight: 6,
-          strokeOpacity: 0.9,
-        },
+    // Cleanup previous polylines
+    polylinesRef.current.forEach((p) => p.setMap(null));
+    polylinesRef.current = [];
+
+    const routesAny = routesLib as any;
+
+    // Modern Routes API travel mode
+    const modernTravelMode =
+      travelMode === 'walk'
+        ? 'WALKING'
+        : travelMode === 'bike'
+        ? 'BICYCLING'
+        : 'DRIVING';
+
+    // Helper to draw a direct route fallback line if service returns error
+    const drawDirectPath = () => {
+      const fallbackLine = new google.maps.Polyline({
+        path: [origin, destination],
+        strokeColor: '#FF7900',
+        strokeWeight: 4,
+        strokeOpacity: 0.8,
+        geodesic: true,
       });
-    }
+      fallbackLine.setMap(map);
+      polylinesRef.current = [fallbackLine];
+    };
 
-    const directionsService = new routesLib.DirectionsService();
-
-    // Map travel mode to Google TravelMode
-    let googleTravelMode = google.maps.TravelMode.DRIVING;
-    if (travelMode === 'walk') {
-      googleTravelMode = google.maps.TravelMode.WALKING;
-    } else if (travelMode === 'bike') {
-      // In areas without bicycling routes, DRIVING or BICYCLING
-      googleTravelMode = google.maps.TravelMode.DRIVING;
-    }
-
-    directionsService.route(
-      {
-        origin,
-        destination,
-        travelMode: googleTravelMode,
-      },
-      (result, status) => {
-        if (status === google.maps.DirectionsStatus.OK && result) {
-          directionsRendererRef.current?.setDirections(result);
-          onRouteResult(result);
-        } else {
-          // If driving or walking fails, attempt fallback DRIVING
-          if (googleTravelMode !== google.maps.TravelMode.DRIVING) {
-            directionsService.route(
-              {
-                origin,
-                destination,
-                travelMode: google.maps.TravelMode.DRIVING,
-              },
-              (fallbackResult, fallbackStatus) => {
-                if (fallbackStatus === google.maps.DirectionsStatus.OK && fallbackResult) {
-                  directionsRendererRef.current?.setDirections(fallbackResult);
-                  onRouteResult(fallbackResult);
-                } else {
-                  onRouteResult(null, fallbackStatus);
-                }
-              }
-            );
-          } else {
-            onRouteResult(null, status);
+    // 1. Try modern Route.computeRoutes first (Mandatory Zero-Legacy pattern)
+    if (routesAny.Route && typeof routesAny.Route.computeRoutes === 'function') {
+      routesAny.Route.computeRoutes({
+        origin: { lat: origin.lat, lng: origin.lng },
+        destination: { lat: destination.lat, lng: destination.lng },
+        travelMode: modernTravelMode,
+        fields: ['path', 'distanceMeters', 'durationMillis', 'viewport', 'legs'],
+      })
+        .then(({ routes }: { routes: any[] }) => {
+          if (!routes || routes.length === 0) {
+            drawDirectPath();
+            onRouteResult(null, 'No route found');
+            return;
           }
-        }
-      }
-    );
+          const primaryRoute = routes[0];
+          const newPolylines = primaryRoute.createPolylines
+            ? primaryRoute.createPolylines()
+            : [
+                new google.maps.Polyline({
+                  path: primaryRoute.path || [origin, destination],
+                  strokeColor: '#FF7900',
+                  strokeWeight: 6,
+                  strokeOpacity: 0.9,
+                }),
+              ];
+
+          newPolylines.forEach((poly: google.maps.Polyline) => {
+            poly.setOptions({
+              strokeColor: '#FF7900',
+              strokeWeight: 6,
+              strokeOpacity: 0.9,
+            });
+            poly.setMap(map);
+          });
+          polylinesRef.current = newPolylines;
+
+          if (primaryRoute.viewport) {
+            map.fitBounds(primaryRoute.viewport);
+          }
+
+          // Synthetic result for UI distance/duration display
+          const distKm = primaryRoute.distanceMeters
+            ? (primaryRoute.distanceMeters / 1000).toFixed(1)
+            : '';
+          const mins = primaryRoute.durationMillis
+            ? Math.round(primaryRoute.durationMillis / 60000)
+            : 0;
+
+          onRouteResult({
+            routes: [
+              {
+                legs: [
+                  {
+                    distance: { text: distKm ? `${distKm} কি.মি.` : '', value: primaryRoute.distanceMeters || 0 },
+                    duration: { text: mins ? `${mins} মিনিট` : '', value: mins * 60 },
+                  },
+                ],
+              },
+            ],
+          } as any);
+        })
+        .catch(() => {
+          // If Routes API fails (e.g. driving across walking only), try legacy DirectionsService or direct line
+          try {
+            if (routesLib.DirectionsService) {
+              const ds = new routesLib.DirectionsService();
+              ds.route(
+                {
+                  origin,
+                  destination,
+                  travelMode:
+                    travelMode === 'walk'
+                      ? google.maps.TravelMode.WALKING
+                      : google.maps.TravelMode.DRIVING,
+                },
+                (result, status) => {
+                  if (status === google.maps.DirectionsStatus.OK && result) {
+                    const line = new google.maps.Polyline({
+                      path: result.routes[0]?.overview_path || [origin, destination],
+                      strokeColor: '#FF7900',
+                      strokeWeight: 6,
+                      strokeOpacity: 0.9,
+                    });
+                    line.setMap(map);
+                    polylinesRef.current = [line];
+                    onRouteResult(result);
+                  } else {
+                    drawDirectPath();
+                    onRouteResult(null, status);
+                  }
+                }
+              );
+            } else {
+              drawDirectPath();
+            }
+          } catch {
+            drawDirectPath();
+          }
+        });
+    } else {
+      drawDirectPath();
+    }
 
     return () => {
-      if (directionsRendererRef.current) {
-        directionsRendererRef.current.setDirections({ routes: [] } as any);
-      }
+      polylinesRef.current.forEach((p) => p.setMap(null));
+      polylinesRef.current = [];
     };
   }, [routesLib, map, origin.lat, origin.lng, destination.lat, destination.lng, travelMode]);
 
@@ -351,61 +421,82 @@ export const ShopRouteMap: React.FC<ShopRouteMapProps> = ({
           isExpanded ? 'h-[440px]' : 'h-[280px] sm:h-[320px]'
         }`}
       >
-        <APIProvider apiKey={apiKey}>
-          <Map
-            mapId="DEMO_MAP_ID"
-            defaultCenter={destination}
-            defaultZoom={14}
-            mapTypeId={mapTypeId}
-            gestureHandling="greedy"
-            disableDefaultUI={false}
-            internalUsageAttributionIds={['gmp_mcp_codeassist_v1_aistudio']}
-            className="w-full h-full"
-          >
-            {/* Auto fit route to screen */}
-            <FitRouteBoundsController
-              origin={origin}
-              destination={destination}
-              triggerFit={triggerFit}
-            />
+        {apiKey ? (
+          <APIProvider apiKey={apiKey} language="bn" region="BD">
+            <Map
+              mapId="DEMO_MAP_ID"
+              defaultCenter={destination}
+              defaultZoom={14}
+              mapTypeId={mapTypeId}
+              gestureHandling="greedy"
+              disableDefaultUI={false}
+              internalUsageAttributionIds={['gmp_mcp_codeassist_v1_aistudio']}
+              className="w-full h-full"
+            >
+              {/* Auto fit route to screen */}
+              <FitRouteBoundsController
+                origin={origin}
+                destination={destination}
+                triggerFit={triggerFit}
+              />
 
-            {/* Directions polyline renderer */}
-            <DirectionsRouteHandler
-              origin={origin}
-              destination={destination}
-              travelMode={travelMode}
-              onRouteResult={(res, err) => {
-                setRouteResult(res);
-                setRouteError(err || null);
-              }}
-            />
+              {/* Directions polyline renderer */}
+              <DirectionsRouteHandler
+                origin={origin}
+                destination={destination}
+                travelMode={travelMode}
+                onRouteResult={(res, err) => {
+                  setRouteResult(res);
+                  setRouteError(err || null);
+                }}
+              />
 
-            {/* User live position AdvancedMarker */}
-            <AdvancedMarker position={origin} title="আপনার বর্তমান অবস্থান">
-              <div className="relative flex flex-col items-center">
-                <div className="flex items-center gap-1 bg-[#0B4A8A] text-white text-[11px] font-bold px-2 py-0.5 rounded-full shadow-md border border-white mb-1 whitespace-nowrap animate-pulse">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400" />
-                  <span>আপনি</span>
+              {/* User live position AdvancedMarker */}
+              <AdvancedMarker position={origin} title="আপনার বর্তমান অবস্থান">
+                <div className="relative flex flex-col items-center">
+                  <div className="flex items-center gap-1 bg-[#0B4A8A] text-white text-[11px] font-bold px-2 py-0.5 rounded-full shadow-md border border-white mb-1 whitespace-nowrap animate-pulse">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                    <span>আপনি</span>
+                  </div>
+                  <div className="relative flex items-center justify-center">
+                    <span className="animate-ping absolute inline-flex h-6 w-6 rounded-full bg-blue-400 opacity-75" />
+                    <div className="relative w-4 h-4 rounded-full bg-blue-600 border-2 border-white shadow-md" />
+                  </div>
                 </div>
-                <div className="relative flex items-center justify-center">
-                  <span className="animate-ping absolute inline-flex h-6 w-6 rounded-full bg-blue-400 opacity-75" />
-                  <div className="relative w-4 h-4 rounded-full bg-blue-600 border-2 border-white shadow-md" />
-                </div>
-              </div>
-            </AdvancedMarker>
+              </AdvancedMarker>
 
-            {/* Shop destination AdvancedMarker */}
-            <AdvancedMarker position={destination} title={shop.nameBn}>
-              <div className="relative flex flex-col items-center">
-                <div className="flex items-center gap-1.5 bg-[#FF7900] text-white text-[11px] font-black px-2.5 py-1 rounded-xl shadow-lg border-2 border-white mb-1 whitespace-nowrap">
-                  <Store className="w-3.5 h-3.5" />
-                  <span>{shop.nameBn}</span>
+              {/* Shop destination AdvancedMarker */}
+              <AdvancedMarker position={destination} title={shop.nameBn}>
+                <div className="relative flex flex-col items-center">
+                  <div className="flex items-center gap-1.5 bg-[#FF7900] text-white text-[11px] font-black px-2.5 py-1 rounded-xl shadow-lg border-2 border-white mb-1 whitespace-nowrap">
+                    <Store className="w-3.5 h-3.5" />
+                    <span>{shop.nameBn}</span>
+                  </div>
+                  <div className="w-3 h-3 bg-[#FF7900] rotate-45 -mt-2 border-r-2 border-b-2 border-white" />
                 </div>
-                <div className="w-3 h-3 bg-[#FF7900] rotate-45 -mt-2 border-r-2 border-b-2 border-white" />
-              </div>
-            </AdvancedMarker>
-          </Map>
-        </APIProvider>
+              </AdvancedMarker>
+            </Map>
+          </APIProvider>
+        ) : (
+          <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center text-slate-500 bg-slate-100 dark:bg-slate-900">
+            <MapPin className="w-8 h-8 text-[#FF7900] mb-2 animate-bounce" />
+            <p className="text-sm font-bold text-slate-800 dark:text-slate-200">
+              {shop.nameBn} এর অবস্থান ও দিকদর্শন
+            </p>
+            <p className="text-xs text-slate-500 mt-1">
+              দূরত্ব: {formatDistanceBn(haversineDistKm)} · দিক: {directionInfo.directionBn}
+            </p>
+            <a
+              href={externalGoogleMapsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-3 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#0B4A8A] text-white text-xs font-bold hover:bg-[#093a6d] transition-all shadow-xs"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+              <span>Google Maps অ্যাপে সরাসরি রাস্তা দেখুন</span>
+            </a>
+          </div>
+        )}
 
         {/* Floating Controls Overlay */}
         <div className="absolute top-3 left-3 z-10 flex flex-col gap-2">
