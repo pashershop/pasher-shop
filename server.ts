@@ -57,6 +57,7 @@ function getLocalD1Data() {
       if (!data.reviews) data.reviews = {};
       if (!data.inquiries) data.inquiries = [];
       if (!data.users) data.users = [];
+      if (!data.sessions) data.sessions = [];
       return data;
     } catch (e) {
       console.error('Error reading pasher-shop-db.json:', e);
@@ -65,6 +66,7 @@ function getLocalD1Data() {
 
   const initialData = {
     users: [],
+    sessions: [],
     categories: [],
     shops: [],
     products: [],
@@ -127,6 +129,283 @@ app.get('/api/d1/status', async (_req, res) => {
       : 'Cloudflare D1 SQL (DB: pasher-shop-db) লোকাল পারসিসটেন্ট স্টোরেজে সক্রিয় রয়েছে',
   });
 });
+
+// Secure native Web Crypto SHA-256 password hashing
+async function hashPassword(password: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(password + ':pasher_salt_2026');
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+// Cryptographically secure token generator
+function generateToken(): string {
+  const bytes = new Uint8Array(24);
+  crypto.getRandomValues(bytes);
+  const hex = Array.from(bytes)
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+  return `pst_${Date.now()}_${hex}`;
+}
+
+// Phone normalizer
+function normalizePhone(phone: string): string {
+  return phone.replace(/[^0-9]/g, '');
+}
+
+// ----------------------------------------------------
+// 0.1 Authentication: Register (POST /api/auth/register)
+// ----------------------------------------------------
+app.post('/api/auth/register', async (req, res) => {
+  try {
+    const { name, phone: rawPhone, password, role: reqRole } = req.body || {};
+    const trimmedName = (name || '').trim();
+    const phone = normalizePhone(rawPhone || '');
+    const trimmedPassword = (password || '').trim();
+    const role = reqRole === 'merchant' ? 'merchant' : 'customer';
+
+    if (!trimmedName || trimmedName.length < 2) {
+      return res.status(400).json({ error: 'আপনার পূর্ণ নাম অন্তত ২ অক্ষরের হতে হবে', success: false });
+    }
+    if (!phone || phone.length < 11) {
+      return res.status(400).json({ error: 'সঠিক ১১ ডিজিটের মোবাইল নম্বর প্রদান করুন', success: false });
+    }
+    if (!trimmedPassword || trimmedPassword.length < 6) {
+      return res.status(400).json({ error: 'পাসওয়ার্ড ন্যূনতম ৬ অক্ষরের হতে হবে', success: false });
+    }
+
+    // Check duplicate in Cloudflare D1
+    if (hasCloudflareCredentials) {
+      const existing = await queryCloudflareD1('SELECT id FROM users WHERE phone = ?', [phone]);
+      if (existing && existing.length > 0) {
+        return res.status(409).json({
+          error: 'এই মোবাইল নম্বরটি দিয়ে ইতিমধ্যে একটি অ্যাকাউন্ট তৈরি করা হয়েছে। অনুগ্রহ করে লগইন করুন।',
+          success: false,
+        });
+      }
+    }
+
+    // Check duplicate in local storage
+    const data = getLocalD1Data();
+    const localExisting = (data.users || []).find((u: any) => u.phone === phone);
+    if (localExisting) {
+      return res.status(409).json({
+        error: 'এই মোবাইল নম্বরটি দিয়ে ইতিমধ্যে একটি অ্যাকাউন্ট তৈরি করা হয়েছে। অনুগ্রহ করে লগইন করুন।',
+        success: false,
+      });
+    }
+
+    const userId = `usr-${Date.now()}`;
+    const passwordHash = await hashPassword(trimmedPassword);
+    const createdAt = new Date().toISOString();
+    const token = generateToken();
+    const sessionId = `ses-${Date.now()}`;
+    const expiresAt = new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString();
+
+    if (hasCloudflareCredentials) {
+      await queryCloudflareD1(
+        'INSERT INTO users (id, name, phone, role, password_hash, created_at) VALUES (?, ?, ?, ?, ?, ?)',
+        [userId, trimmedName, phone, role, passwordHash, createdAt]
+      );
+      await queryCloudflareD1(
+        'INSERT INTO sessions (id, user_id, token, expires_at, created_at) VALUES (?, ?, ?, ?, ?)',
+        [sessionId, userId, token, expiresAt, createdAt]
+      );
+    }
+
+    // Save to local D1 store
+    data.users.push({
+      id: userId,
+      name: trimmedName,
+      phone,
+      role,
+      password_hash: passwordHash,
+      created_at: createdAt,
+    });
+    data.sessions.push({
+      id: sessionId,
+      user_id: userId,
+      token,
+      expires_at: expiresAt,
+      created_at: createdAt,
+    });
+    saveLocalD1Data(data);
+
+    return res.status(201).json({
+      success: true,
+      message: 'অ্যাকাউন্ট সফলভাবে তৈরি হয়েছে',
+      token,
+      user: {
+        id: userId,
+        name: trimmedName,
+        phone,
+        role,
+      },
+    });
+  } catch (err: any) {
+    console.error('Registration error:', err);
+    return res.status(500).json({ error: 'নিবন্ধন সম্পন্ন করতে ব্যর্থ হয়েছে। পুনরায় চেষ্টা করুন।', success: false });
+  }
+});
+
+// ----------------------------------------------------
+// 0.2 Authentication: Login (POST /api/auth/login)
+// ----------------------------------------------------
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { phone: rawPhone, password } = req.body || {};
+    const phone = normalizePhone(rawPhone || '');
+    const trimmedPassword = (password || '').trim();
+
+    if (!phone || !trimmedPassword) {
+      return res.status(400).json({ error: 'মোবাইল নম্বর ও পাসওয়ার্ড প্রদান করুন', success: false });
+    }
+
+    let userRow: any = null;
+
+    if (hasCloudflareCredentials) {
+      const results = await queryCloudflareD1(
+        'SELECT id, name, phone, role, password_hash FROM users WHERE phone = ?',
+        [phone]
+      );
+      if (results && results[0]) {
+        userRow = results[0];
+      }
+    }
+
+    if (!userRow) {
+      const data = getLocalD1Data();
+      userRow = (data.users || []).find((u: any) => u.phone === phone);
+    }
+
+    if (!userRow) {
+      return res.status(401).json({ error: 'মোবাইল নম্বর অথবা পাসওয়ার্ড সঠিক নয়', success: false });
+    }
+
+    const inputHash = await hashPassword(trimmedPassword);
+    if (inputHash !== userRow.password_hash) {
+      return res.status(401).json({ error: 'মোবাইল নম্বর অথবা পাসওয়ার্ড সঠিক নয়', success: false });
+    }
+
+    // Generate new active session
+    const token = generateToken();
+    const sessionId = `ses-${Date.now()}`;
+    const expiresAt = new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString();
+    const createdAt = new Date().toISOString();
+
+    if (hasCloudflareCredentials) {
+      await queryCloudflareD1(
+        'INSERT INTO sessions (id, user_id, token, expires_at, created_at) VALUES (?, ?, ?, ?, ?)',
+        [sessionId, userRow.id, token, expiresAt, createdAt]
+      );
+    }
+
+    const data = getLocalD1Data();
+    data.sessions.push({
+      id: sessionId,
+      user_id: userRow.id,
+      token,
+      expires_at: expiresAt,
+      created_at: createdAt,
+    });
+    saveLocalD1Data(data);
+
+    return res.json({
+      success: true,
+      message: 'লগইন সফল হয়েছে',
+      token,
+      user: {
+        id: userRow.id,
+        name: userRow.name,
+        phone: userRow.phone,
+        role: userRow.role,
+      },
+    });
+  } catch (err: any) {
+    console.error('Login error:', err);
+    return res.status(500).json({ error: 'লগইন প্রক্রিয়ায় ত্রুটি ঘটেছে', success: false });
+  }
+});
+
+// ----------------------------------------------------
+// 0.3 Authentication: Current User (GET /api/auth/me)
+// ----------------------------------------------------
+app.get('/api/auth/me', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization || '';
+    const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+
+    if (!token) {
+      return res.status(401).json({ error: 'অথেনটিকেশন টোকেন পাওয়া যায়নি', success: false });
+    }
+
+    const now = new Date().toISOString();
+
+    if (hasCloudflareCredentials) {
+      const results = await queryCloudflareD1(
+        `SELECT u.id, u.name, u.phone, u.role
+         FROM sessions s
+         JOIN users u ON s.user_id = u.id
+         WHERE s.token = ? AND s.expires_at > ?`,
+        [token, now]
+      );
+      if (results && results[0]) {
+        return res.json({ success: true, user: results[0] });
+      }
+    }
+
+    // Local check
+    const data = getLocalD1Data();
+    const session = (data.sessions || []).find((s: any) => s.token === token && s.expires_at > now);
+    if (!session) {
+      return res.status(401).json({ error: 'সেশন মেয়াদোত্তীর্ণ বা অকার্যকর, পুনরায় লগইন করুন', success: false });
+    }
+
+    const user = (data.users || []).find((u: any) => u.id === session.user_id);
+    if (!user) {
+      return res.status(401).json({ error: 'ব্যবহারকারী পাওয়া যায়নি', success: false });
+    }
+
+    return res.json({
+      success: true,
+      user: {
+        id: user.id,
+        name: user.name,
+        phone: user.phone,
+        role: user.role,
+      },
+    });
+  } catch (err: any) {
+    console.error('Get me error:', err);
+    return res.status(500).json({ error: 'অথেনটিকেশন যাচাইয়ে ত্রুটি ঘটেছে', success: false });
+  }
+});
+
+// ----------------------------------------------------
+// 0.4 Authentication: Logout (POST /api/auth/logout)
+// ----------------------------------------------------
+app.post('/api/auth/logout', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization || '';
+    const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+
+    if (token) {
+      if (hasCloudflareCredentials) {
+        await queryCloudflareD1('DELETE FROM sessions WHERE token = ?', [token]);
+      }
+      const data = getLocalD1Data();
+      data.sessions = (data.sessions || []).filter((s: any) => s.token !== token);
+      saveLocalD1Data(data);
+    }
+
+    return res.json({ success: true, message: 'লগআউট সফল হয়েছে' });
+  } catch (err: any) {
+    console.error('Logout error:', err);
+    return res.status(500).json({ error: 'লগআউট সম্পন্ন হতে ত্রুটি ঘটেছে', success: false });
+  }
+});
+
 
 // ----------------------------------------------------
 // 1. Categories: GET /api/categories

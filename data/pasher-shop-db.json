@@ -1,8 +1,71 @@
 {
-  "users": [],
+  "users": [
+    {
+      "id": "usr-1794322661885",
+      "name": "সাকিব হাসান",
+      "phone": "01711223344",
+      "role": "customer",
+      "password_hash": "7c3c8905e09e76b51605f8b28caadcf1b020918f95154feae27928ac8196b29c",
+      "created_at": "2026-11-10T14:57:41.887Z"
+    },
+    {
+      "id": "usr-1794322703099",
+      "name": "করিম ভ্যারাইটিজ",
+      "phone": "01819998877",
+      "role": "merchant",
+      "password_hash": "e02ebd846a8ca4800dcd3c07784a02187e296d5cd3d09a4e31d4f583acf12503",
+      "created_at": "2026-11-10T14:58:23.099Z"
+    }
+  ],
+  "sessions": [
+    {
+      "id": "ses-1794322661887",
+      "user_id": "usr-1794322661885",
+      "token": "pst_1794322661887_967e8b00a783943bfb235d38e01208254fc7da36c2f276ac",
+      "expires_at": "2026-12-10T14:57:41.887Z",
+      "created_at": "2026-11-10T14:57:41.887Z"
+    },
+    {
+      "id": "ses-1794322703099",
+      "user_id": "usr-1794322703099",
+      "token": "pst_1794322703099_efbbe9da48dbecc036645fb59a39b2adbaffe6a2261a9bcf",
+      "expires_at": "2026-12-10T14:58:23.099Z",
+      "created_at": "2026-11-10T14:58:23.099Z"
+    }
+  ],
   "categories": [],
-  "shops": [],
-  "products": [],
+  "shops": [
+    {
+      "nameBn": "করিম ডিপার্টমেন্টাল স্টোর",
+      "phone": "01819998877",
+      "ownerName": "করিম",
+      "ownerPhone": "01819998877",
+      "categoryId": "grocery",
+      "categoryBn": "মুদি দোকান",
+      "addressBn": "ধানমন্ডি ২৭, ঢাকা",
+      "area": "ধানমন্ডি",
+      "lat": 23.7516,
+      "lng": 90.3732,
+      "id": "shop-1794322708713",
+      "isOpen": true,
+      "rating": 5,
+      "reviewCount": 0,
+      "deliveryAvailable": true,
+      "minOrder": 0,
+      "featuredProducts": []
+    }
+  ],
+  "products": [
+    {
+      "shopId": "shop-1794322708713",
+      "nameBn": "মিনিকেট প্রিমিয়াম চাল",
+      "price": 75,
+      "unit": "কেজি",
+      "category": "grocery",
+      "inStock": true,
+      "id": "prod-1794322722052"
+    }
+  ],
   "reviews": {},
   "inquiries": []
 }

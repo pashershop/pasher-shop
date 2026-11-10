@@ -294,4 +294,171 @@ export const d1Service = {
       return false;
     }
   },
+
+  // ----------------------------------------------------
+  // Authentication & Session Management (Cloudflare D1)
+  // ----------------------------------------------------
+  getStoredToken(): string | null {
+    try {
+      return localStorage.getItem('pasher_auth_token');
+    } catch {
+      return null;
+    }
+  },
+
+  setStoredToken(token: string) {
+    try {
+      localStorage.setItem('pasher_auth_token', token);
+    } catch {}
+  },
+
+  removeStoredToken() {
+    try {
+      localStorage.removeItem('pasher_auth_token');
+      localStorage.removeItem('pasher_auth_user');
+    } catch {}
+  },
+
+  /**
+   * Register new user (Customer or Shopkeeper) in Cloudflare D1
+   */
+  async register(data: {
+    name: string;
+    phone: string;
+    password: string;
+    role: 'customer' | 'merchant';
+  }): Promise<{ success: boolean; message?: string; token?: string; user?: any; error?: string }> {
+    try {
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+
+      const result = await res.json();
+      if (res.ok && result.token) {
+        this.setStoredToken(result.token);
+        if (result.user) {
+          try {
+            localStorage.setItem('pasher_auth_user', JSON.stringify(result.user));
+          } catch {}
+        }
+        return { success: true, message: result.message, token: result.token, user: result.user };
+      }
+
+      return {
+        success: false,
+        error: result.error || 'নিবন্ধন সম্পন্ন করতে ব্যর্থ হয়েছে',
+      };
+    } catch (err: any) {
+      console.error('d1Service.register error:', err);
+      return {
+        success: false,
+        error: 'নেটওয়ার্ক বা সার্ভারে সমস্যা দেখা দিয়েছে। পুনরায় চেষ্টা করুন।',
+      };
+    }
+  },
+
+  /**
+   * Login user with Phone and Password from Cloudflare D1
+   */
+  async login(data: {
+    phone: string;
+    password: string;
+  }): Promise<{ success: boolean; message?: string; token?: string; user?: any; error?: string }> {
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+
+      const result = await res.json();
+      if (res.ok && result.token) {
+        this.setStoredToken(result.token);
+        if (result.user) {
+          try {
+            localStorage.setItem('pasher_auth_user', JSON.stringify(result.user));
+          } catch {}
+        }
+        return { success: true, message: result.message, token: result.token, user: result.user };
+      }
+
+      return {
+        success: false,
+        error: result.error || 'মোবাইল নম্বর অথবা পাসওয়ার্ড সঠিক নয়',
+      };
+    } catch (err: any) {
+      console.error('d1Service.login error:', err);
+      return {
+        success: false,
+        error: 'নেটওয়ার্ক বা সার্ভারে সমস্যা দেখা দিয়েছে। পুনরায় চেষ্টা করুন।',
+      };
+    }
+  },
+
+  /**
+   * Get current authenticated user using session token
+   */
+  async getCurrentUser(): Promise<{ success: boolean; user?: any; error?: string }> {
+    const token = this.getStoredToken();
+    if (!token) {
+      return { success: false, error: 'কোনো সক্রিয় সেশন নেই' };
+    }
+
+    try {
+      const res = await fetch('/api/auth/me', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (res.ok) {
+        const result = await res.json();
+        if (result.user) {
+          try {
+            localStorage.setItem('pasher_auth_user', JSON.stringify(result.user));
+          } catch {}
+          return { success: true, user: result.user };
+        }
+      } else if (res.status === 401) {
+        // Expired token
+        this.removeStoredToken();
+      }
+    } catch (err) {
+      console.warn('d1Service.getCurrentUser network fallback:', err);
+    }
+
+    // Resilient local user fallback if previously saved
+    try {
+      const cached = localStorage.getItem('pasher_auth_user');
+      if (cached) {
+        return { success: true, user: JSON.parse(cached) };
+      }
+    } catch {}
+
+    return { success: false, error: 'সেশন পাওয়া যায়নি' };
+  },
+
+  /**
+   * Logout user and invalidate Cloudflare D1 session
+   */
+  async logout(): Promise<void> {
+    const token = this.getStoredToken();
+    this.removeStoredToken();
+
+    if (token) {
+      try {
+        await fetch('/api/auth/logout', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+      } catch (err) {
+        console.warn('d1Service.logout network notice:', err);
+      }
+    }
+  },
 };
+

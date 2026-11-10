@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Logo } from './Logo';
-import { MapPin, Menu, X, ChevronDown, User, Store, Navigation, ShoppingBag, Scale, Sun, Moon } from 'lucide-react';
+import { MapPin, Menu, X, ChevronDown, User, Store, Navigation, ShoppingBag, Scale, Sun, Moon, LogOut } from 'lucide-react';
 import { AppView } from './BottomNavBar';
 
 interface HeaderProps {
@@ -8,6 +8,8 @@ interface HeaderProps {
   isAutoDetected?: boolean;
   hasOwnedShop?: boolean;
   ownedShopName?: string;
+  currentUser?: { id: string; name: string; phone: string; role: 'customer' | 'merchant' } | null;
+  onLogout?: () => void;
   currentView?: AppView;
   isDarkMode: boolean;
   onToggleTheme: () => void;
@@ -24,6 +26,8 @@ export const Header: React.FC<HeaderProps> = ({
   isAutoDetected,
   hasOwnedShop = false,
   ownedShopName,
+  currentUser,
+  onLogout,
   currentView = 'home',
   isDarkMode,
   onToggleTheme,
@@ -176,21 +180,44 @@ export const Header: React.FC<HeaderProps> = ({
               </button>
             )}
 
-            {/* Login button */}
-            <button
-              onClick={() => onOpenAuthModal('login')}
-              className="px-2 py-1 text-[11px] font-semibold text-white/90 hover:text-white transition-colors whitespace-nowrap cursor-pointer"
-            >
-              লগইন
-            </button>
+            {/* Authentication / User profile */}
+            {currentUser ? (
+              <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1.5 px-2.5 py-1 bg-white/10 rounded-lg text-[11px] font-semibold text-white/95 border border-white/20">
+                  <User className="w-3 h-3 text-[#FF7900]" />
+                  <span className="max-w-[85px] truncate font-bold">{currentUser.name}</span>
+                  <span className="text-[9px] bg-white/20 px-1 py-0.5 rounded text-white/90">
+                    {currentUser.role === 'merchant' ? 'দোকানদার' : 'ক্রেতা'}
+                  </span>
+                </div>
+                <button
+                  onClick={onLogout}
+                  className="p-1.5 text-white/80 hover:text-white hover:bg-white/15 rounded-lg transition-colors cursor-pointer"
+                  title="লগআউট করুন"
+                  aria-label="লগআউট"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ) : (
+              <>
+                {/* Login button */}
+                <button
+                  onClick={() => onOpenAuthModal('login')}
+                  className="px-2 py-1 text-[11px] font-semibold text-white/90 hover:text-white transition-colors whitespace-nowrap cursor-pointer"
+                >
+                  লগইন
+                </button>
 
-            {/* Sign up / Primary Action */}
-            <button
-              onClick={() => onOpenAuthModal('signup')}
-              className="px-2.5 py-1 text-[11px] font-black text-white bg-[#FF7900] hover:bg-[#e06b00] rounded-lg transition-colors shadow-xs whitespace-nowrap cursor-pointer"
-            >
-              সাইন আপ
-            </button>
+                {/* Sign up / Primary Action */}
+                <button
+                  onClick={() => onOpenAuthModal('signup')}
+                  className="px-2.5 py-1 text-[11px] font-black text-white bg-[#FF7900] hover:bg-[#e06b00] rounded-lg transition-colors shadow-xs whitespace-nowrap cursor-pointer"
+                >
+                  সাইন আপ
+                </button>
+              </>
+            )}
           </div>
 
           {/* Mobile Right Controls */}
@@ -334,26 +361,52 @@ export const Header: React.FC<HeaderProps> = ({
               </button>
             )}
 
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  onOpenAuthModal('login');
-                }}
-                className="w-full py-2.5 text-xs font-semibold text-slate-700 dark:text-white border border-slate-300 dark:border-slate-700 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-center transition-colors cursor-pointer"
-              >
-                লগইন (Login)
-              </button>
-              <button
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  onOpenAuthModal('signup');
-                }}
-                className="w-full py-2.5 text-xs font-semibold text-white bg-[#FF7900] rounded-xl hover:bg-[#e06b00] text-center transition-colors cursor-pointer"
-              >
-                সাইন আপ
-              </button>
-            </div>
+            {currentUser ? (
+              <div className="p-3 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-[#0B4A8A]/10 dark:bg-cyan-900/40 text-[#0B4A8A] dark:text-cyan-300 flex items-center justify-center font-bold">
+                    <User className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-slate-800 dark:text-white">{currentUser.name}</div>
+                    <div className="text-[10px] text-slate-500 dark:text-slate-400">
+                      {currentUser.role === 'merchant' ? 'দোকানদার অ্যাকাউন্ট' : 'ক্রেতা অ্যাকাউন্ট'} ({currentUser.phone})
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    onLogout?.();
+                  }}
+                  className="px-2.5 py-1 text-xs font-semibold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg flex items-center gap-1 transition-colors cursor-pointer"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span>লগআউট</span>
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    onOpenAuthModal('login');
+                  }}
+                  className="w-full py-2.5 text-xs font-semibold text-slate-700 dark:text-white border border-slate-300 dark:border-slate-700 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-center transition-colors cursor-pointer"
+                >
+                  লগইন (Login)
+                </button>
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    onOpenAuthModal('signup');
+                  }}
+                  className="w-full py-2.5 text-xs font-semibold text-white bg-[#FF7900] rounded-xl hover:bg-[#e06b00] text-center transition-colors cursor-pointer"
+                >
+                  সাইন আপ
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}

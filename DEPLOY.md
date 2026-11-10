@@ -23,6 +23,10 @@ Pasher Shop-এর Backend এবং Cloudflare D1 Database সম্পূর�
 
 | মেথড | এন্ডপয়েন্ট | কাজ ও বিবরণ |
 |---|---|---|
+| **POST** | `/api/auth/register` | নতুন ইউজার রেজিস্ট্রেশন (Password SHA-256 Hashed, D1 users ও sessions-এ সংরক্ষণ) |
+| **POST** | `/api/auth/login` | মোবাইল ও পাসওয়ার্ড দিয়ে লগইন ও সেশন টোকেন তৈরি |
+| **GET** | `/api/auth/me` | Bearer Token দিয়ে সক্রিয় সেশন ও প্রোফাইল যাচাই |
+| **POST** | `/api/auth/logout` | সক্রিয় সেশন ডিলিট ও লগআউট |
 | **GET** | `/api/categories` | সকল ক্যাটাগরি তালিকা রিটার্ন করে |
 | **GET** | `/api/shops` | সকল দোকান রিটার্ন করে (`?category=...&area=...&search=...` সাপোর্টসহ) |
 | **GET** | `/api/shops/:id` | নির্দিষ্ট দোকানের বিস্তারিত ও সকল পণ্য রিটার্ন করে |

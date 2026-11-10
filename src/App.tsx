@@ -124,8 +124,30 @@ export default function App() {
   // Dynamic products state synced with Cloudflare D1 SQL database
   const [allProducts, setAllProducts] = useState<ProductItem[]>([]);
 
-  // Sync shops & products with Cloudflare D1 SQL database (DB: pasher-shop-db)
+  // Authenticated user state from Cloudflare D1
+  const [currentUser, setCurrentUser] = useState<{
+    id: string;
+    name: string;
+    phone: string;
+    role: 'customer' | 'merchant';
+  } | null>(() => {
+    try {
+      const saved = localStorage.getItem('pasher_auth_user');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  // Sync session and data with Cloudflare D1 SQL database (DB: pasher-shop-db)
   React.useEffect(() => {
+    // Check active session
+    d1Service.getCurrentUser().then((res) => {
+      if (res.success && res.user) {
+        setCurrentUser(res.user);
+      }
+    });
+
     d1Service.getAllShops().then((shopsFromD1) => {
       if (shopsFromD1 && shopsFromD1.length > 0) {
         setAllShops(shopsFromD1);
@@ -138,6 +160,11 @@ export default function App() {
       }
     });
   }, []);
+
+  const handleLogout = async () => {
+    await d1Service.logout();
+    setCurrentUser(null);
+  };
 
   // Shop creation and update handlers
   const handleShopCreated = (newShop: Shop) => {
@@ -399,6 +426,8 @@ export default function App() {
         isAutoDetected={isAutoDetected}
         hasOwnedShop={!!myShop}
         ownedShopName={myShop?.nameBn}
+        currentUser={currentUser}
+        onLogout={handleLogout}
         currentView={currentView}
         isDarkMode={isDarkMode}
         onToggleTheme={toggleTheme}
@@ -434,6 +463,8 @@ export default function App() {
           <CustomerDashboard
             currentArea={currentArea}
             isAutoDetected={isAutoDetected}
+            currentUser={currentUser}
+            onLogout={handleLogout}
             onDetectLocation={detectLiveLocation}
             onOpenShopModal={(shop) => setActiveShop(shop)}
             onOpenAddShop={() => setIsAddShopOpen(true)}
@@ -593,11 +624,24 @@ export default function App() {
         isOpen={authModalConfig.isOpen}
         initialMode={authModalConfig.mode}
         onClose={() => setAuthModalConfig((prev) => ({ ...prev, isOpen: false }))}
-        onLoginSuccess={(role, phone) => {
+        onLoginSuccess={(role, phone, user) => {
+          if (user) {
+            setCurrentUser(user);
+          } else {
+            setCurrentUser({
+              id: `usr-${Date.now()}`,
+              name: role === 'merchant' ? 'দোকানদার' : 'সম্মানিত ক্রেতা',
+              phone,
+              role,
+            });
+          }
+
           if (role === 'merchant') {
             const cleanPhone = phone.replace(/[^0-9]/g, '');
             const matchingShop = allShops.find(
-              (s) => s.phone.replace(/[^0-9]/g, '') === cleanPhone
+              (s) =>
+                s.phone.replace(/[^0-9]/g, '') === cleanPhone ||
+                (s.ownerPhone && s.ownerPhone.replace(/[^0-9]/g, '') === cleanPhone)
             );
             if (matchingShop) {
               setMyShopId(matchingShop.id);

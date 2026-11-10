@@ -23,6 +23,8 @@ import { SHOPS, FEATURED_PRODUCTS } from '../data/mockData';
 interface CustomerDashboardProps {
   currentArea: string;
   isAutoDetected: boolean;
+  currentUser?: { id: string; name: string; phone: string; role: string } | null;
+  onLogout?: () => void;
   onDetectLocation: () => void;
   onOpenShopModal: (shop: Shop) => void;
   onOpenAddShop: () => void;
@@ -35,6 +37,8 @@ interface CustomerDashboardProps {
 export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
   currentArea,
   isAutoDetected,
+  currentUser,
+  onLogout,
   onDetectLocation,
   onOpenShopModal,
   onOpenAddShop,
@@ -79,10 +83,10 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
               </span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mt-1">
-              স্বাগতম, আপনার পার্সোনাল ড্যাশবোর্ড
+              {currentUser?.name ? `স্বাগতম, ${currentUser.name}` : 'স্বাগতম, আপনার পার্সোনাল ড্যাশবোর্ড'}
             </h1>
             <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-0.5">
-              আপনার চারপাশের সেরা দোকানগুলোর সাথে কানেক্টেড থাকুন এবং সহজে কেনাকাটা করুন
+              {currentUser?.phone ? `মোবাইল: ${currentUser.phone} • ` : ''}আপনার চারপাশের সেরা দোকানগুলোর সাথে কানেক্টেড থাকুন এবং সহজে কেনাকাটা করুন
             </p>
           </div>
 

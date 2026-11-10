@@ -92,7 +92,19 @@ CREATE TABLE IF NOT EXISTS inquiries (
     FOREIGN KEY (shop_id) REFERENCES shops(id) ON DELETE CASCADE
 );
 
+-- 7. User Sessions Table (Session Management)
+CREATE TABLE IF NOT EXISTS sessions (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    token TEXT UNIQUE NOT NULL,
+    expires_at DATETIME NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
 -- High Performance Indexes
+CREATE INDEX IF NOT EXISTS idx_users_phone ON users(phone);
+CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions(token);
 CREATE INDEX IF NOT EXISTS idx_shops_category ON shops(category_id);
 CREATE INDEX IF NOT EXISTS idx_shops_area ON shops(area);
 CREATE INDEX IF NOT EXISTS idx_products_shop_id ON products(shop_id);

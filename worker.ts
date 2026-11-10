@@ -56,6 +56,30 @@ function errorResponse(message: string, status = 400, details?: any) {
   return jsonResponse({ error: message, success: false, details }, status);
 }
 
+// Secure native Web Crypto SHA-256 password hashing
+async function hashPassword(password: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(password + ':pasher_salt_2026');
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+// Cryptographically secure token generator
+function generateToken(): string {
+  const bytes = new Uint8Array(24);
+  crypto.getRandomValues(bytes);
+  const hex = Array.from(bytes)
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+  return `pst_${Date.now()}_${hex}`;
+}
+
+// Phone normalizer
+function normalizePhone(phone: string): string {
+  return phone.replace(/[^0-9]/g, '');
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
@@ -107,6 +131,170 @@ export default {
             ? 'Cloudflare D1 SQL (DB: pasher-shop-db) সংযুক্ত ও সক্রিয়'
             : 'Cloudflare D1 SQL বাইন্ডিং পাওয়া যায়নি বা সংযোগে ত্রুটি',
         });
+      }
+
+      // ---------------------------------------------------------
+      // 0.1 Authentication: Register (POST /api/auth/register)
+      // ---------------------------------------------------------
+      if (pathname === '/api/auth/register' && method === 'POST') {
+        const body = (await request.json()) as any;
+        const name = body.name?.trim();
+        const rawPhone = body.phone?.trim();
+        const password = body.password?.trim();
+        const role = body.role === 'merchant' ? 'merchant' : 'customer';
+
+        if (!name || name.length < 2) {
+          return errorResponse('আপনার পূর্ণ নাম অন্তত ২ অক্ষরের হতে হবে');
+        }
+        if (!rawPhone || normalizePhone(rawPhone).length < 11) {
+          return errorResponse('সঠিক ১১ ডিজিটের মোবাইল নম্বর প্রদান করুন');
+        }
+        if (!password || password.length < 6) {
+          return errorResponse('পাসওয়ার্ড ন্যূনতম ৬ অক্ষরের হতে হবে');
+        }
+
+        const phone = normalizePhone(rawPhone);
+
+        // Check if phone already registered (Prepared statement)
+        const existing = await env.DB.prepare('SELECT id FROM users WHERE phone = ?').bind(phone).first();
+        if (existing) {
+          return errorResponse('এই মোবাইল নম্বরটি দিয়ে ইতিমধ্যে একটি অ্যাকাউন্ট তৈরি করা হয়েছে। অনুগ্রহ করে লগইন করুন।', 409);
+        }
+
+        const userId = `usr-${Date.now()}`;
+        const passwordHash = await hashPassword(password);
+
+        // Insert into users table
+        await env.DB.prepare(
+          'INSERT INTO users (id, name, phone, role, password_hash) VALUES (?, ?, ?, ?, ?)'
+        )
+          .bind(userId, name, phone, role, passwordHash)
+          .run();
+
+        // Create persistent session
+        const token = generateToken();
+        const sessionId = `ses-${Date.now()}`;
+        const expiresAt = new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString();
+
+        await env.DB.prepare(
+          'INSERT INTO sessions (id, user_id, token, expires_at) VALUES (?, ?, ?, ?)'
+        )
+          .bind(sessionId, userId, token, expiresAt)
+          .run();
+
+        return jsonResponse(
+          {
+            success: true,
+            message: 'অ্যাকাউন্ট সফলভাবে তৈরি হয়েছে',
+            token,
+            user: {
+              id: userId,
+              name,
+              phone,
+              role,
+            },
+          },
+          201
+        );
+      }
+
+      // ---------------------------------------------------------
+      // 0.2 Authentication: Login (POST /api/auth/login)
+      // ---------------------------------------------------------
+      if (pathname === '/api/auth/login' && method === 'POST') {
+        const body = (await request.json()) as any;
+        const rawPhone = body.phone?.trim();
+        const password = body.password?.trim();
+
+        if (!rawPhone || !password) {
+          return errorResponse('মোবাইল নম্বর ও পাসওয়ার্ড প্রদান করুন');
+        }
+
+        const phone = normalizePhone(rawPhone);
+
+        // Prepared statement query
+        const userRow = await env.DB.prepare(
+          'SELECT id, name, phone, role, password_hash FROM users WHERE phone = ?'
+        )
+          .bind(phone)
+          .first<any>();
+
+        if (!userRow) {
+          return errorResponse('মোবাইল নম্বর অথবা পাসওয়ার্ড সঠিক নয়', 401);
+        }
+
+        const inputHash = await hashPassword(password);
+        if (inputHash !== userRow.password_hash) {
+          return errorResponse('মোবাইল নম্বর অথবা পাসওয়ার্ড সঠিক নয়', 401);
+        }
+
+        // Create new session in D1
+        const token = generateToken();
+        const sessionId = `ses-${Date.now()}`;
+        const expiresAt = new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString();
+
+        await env.DB.prepare(
+          'INSERT INTO sessions (id, user_id, token, expires_at) VALUES (?, ?, ?, ?)'
+        )
+          .bind(sessionId, userRow.id, token, expiresAt)
+          .run();
+
+        return jsonResponse({
+          success: true,
+          message: 'লগইন সফল হয়েছে',
+          token,
+          user: {
+            id: userRow.id,
+            name: userRow.name,
+            phone: userRow.phone,
+            role: userRow.role,
+          },
+        });
+      }
+
+      // ---------------------------------------------------------
+      // 0.3 Authentication: Current User (GET /api/auth/me)
+      // ---------------------------------------------------------
+      if (pathname === '/api/auth/me' && method === 'GET') {
+        const authHeader = request.headers.get('Authorization') || '';
+        const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+
+        if (!token) {
+          return errorResponse('অথেনটিকেশন টোকেন পাওয়া যায়নি', 401);
+        }
+
+        const now = new Date().toISOString();
+        const sessionRow = await env.DB.prepare(
+          `SELECT u.id, u.name, u.phone, u.role
+           FROM sessions s
+           JOIN users u ON s.user_id = u.id
+           WHERE s.token = ? AND s.expires_at > ?`
+        )
+          .bind(token, now)
+          .first<any>();
+
+        if (!sessionRow) {
+          return errorResponse('সেশন মেয়াদোত্তীর্ণ বা অকার্যকর, পুনরায় লগইন করুন', 401);
+        }
+
+        return jsonResponse({
+          success: true,
+          user: sessionRow,
+        });
+      }
+
+      // ---------------------------------------------------------
+      // 0.4 Authentication: Logout (POST /api/auth/logout)
+      // ---------------------------------------------------------
+      if (pathname === '/api/auth/logout' && method === 'POST') {
+        const authHeader = request.headers.get('Authorization') || '';
+        const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+
+        if (token) {
+          await env.DB.prepare('DELETE FROM sessions WHERE token = ?').bind(token).run();
+        }
+
+        return jsonResponse({ success: true, message: 'লগআউট সফল হয়েছে' });
       }
 
       // ---------------------------------------------------------
