@@ -1,17 +1,17 @@
-import { Shop, ProductItem } from '../types';
-import { SHOPS } from '../data/mockData';
+import { Shop, ProductItem, Category } from '../types';
+import { CATEGORIES } from '../data/mockData';
 
 export interface D1StatusResponse {
   binding: string;
   databaseName: string;
   connected: boolean;
-  mode: 'cloudflare_d1_api' | 'local_persistent_d1';
+  mode: 'cloudflare_d1_api' | 'cloudflare_d1_worker' | 'local_persistent_d1';
   message: string;
 }
 
 /**
- * Cloudflare D1 Service
- * Binding: DB
+ * Cloudflare D1 Database Client Service
+ * Database Binding: DB
  * Database Name: pasher-shop-db
  */
 export const d1Service = {
@@ -25,7 +25,7 @@ export const d1Service = {
         return await res.json();
       }
     } catch (e) {
-      // Backend fallback
+      // fallback
     }
     return {
       binding: 'DB',
@@ -37,15 +37,42 @@ export const d1Service = {
   },
 
   /**
-   * Fetch all shops from Cloudflare D1 SQL database
+   * Fetch all categories from D1
    */
-  async getAllShops(): Promise<Shop[]> {
+  async getCategories(): Promise<Category[]> {
     try {
-      const res = await fetch('/api/shops');
+      const res = await fetch('/api/categories');
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data) && data.length > 0) {
-          // Cache in localStorage for instant offline access
+          return data;
+        }
+      }
+    } catch (err) {
+      console.warn('D1 getCategories fallback:', err);
+    }
+    return CATEGORIES;
+  },
+
+  /**
+   * Fetch all shops from Cloudflare D1 SQL database
+   */
+  async getAllShops(filters?: { category?: string; area?: string; search?: string }): Promise<Shop[]> {
+    try {
+      let url = '/api/shops';
+      const params = new URLSearchParams();
+      if (filters?.category && filters.category !== 'all') params.append('category', filters.category);
+      if (filters?.area && !filters.area.includes('সকল এলাকা')) params.append('area', filters.area);
+      if (filters?.search) params.append('search', filters.search);
+
+      const qs = params.toString();
+      if (qs) url += `?${qs}`;
+
+      const res = await fetch(url);
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          // Cache in localStorage for offline resiliency
           try {
             localStorage.setItem('pasher_shop_list', JSON.stringify(data));
           } catch (e) {}
@@ -56,30 +83,47 @@ export const d1Service = {
       console.warn('D1 fetch fallback to local storage:', err);
     }
 
-    // Fallback to localStorage or mockData
+    // Fallback to localStorage
     try {
       const saved = localStorage.getItem('pasher_shop_list');
       if (saved) return JSON.parse(saved);
     } catch (e) {}
 
-    return SHOPS;
+    return [];
+  },
+
+  /**
+   * Fetch a single shop by ID with products
+   */
+  async getShopById(id: string): Promise<Shop | null> {
+    try {
+      const res = await fetch(`/api/shops/${id}`);
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch (err) {
+      console.warn(`D1 getShopById error for ${id}:`, err);
+    }
+    return null;
   },
 
   /**
    * Create a new shop in Cloudflare D1 SQL
    */
-  async createShop(shop: Shop): Promise<boolean> {
+  async createShop(shop: Partial<Shop>): Promise<Shop | null> {
     try {
       const res = await fetch('/api/shops', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(shop),
       });
-      return res.ok;
+      if (res.ok) {
+        return await res.json();
+      }
     } catch (err) {
       console.warn('D1 createShop error:', err);
-      return false;
     }
+    return null;
   },
 
   /**
@@ -95,6 +139,114 @@ export const d1Service = {
       return res.ok;
     } catch (err) {
       console.warn('D1 updateShop error:', err);
+      return false;
+    }
+  },
+
+  /**
+   * Delete a shop from Cloudflare D1 SQL
+   */
+  async deleteShop(id: string): Promise<boolean> {
+    try {
+      const res = await fetch(`/api/shops/${id}`, {
+        method: 'DELETE',
+      });
+      return res.ok;
+    } catch (err) {
+      console.warn(`D1 deleteShop error for ${id}:`, err);
+      return false;
+    }
+  },
+
+  /**
+   * Fetch all products from Cloudflare D1 SQL database
+   */
+  async getAllProducts(filters?: { shopId?: string; category?: string; search?: string }): Promise<ProductItem[]> {
+    try {
+      let url = '/api/products';
+      const params = new URLSearchParams();
+      if (filters?.shopId) params.append('shop_id', filters.shopId);
+      if (filters?.category && filters.category !== 'all') params.append('category', filters.category);
+      if (filters?.search) params.append('search', filters.search);
+
+      const qs = params.toString();
+      if (qs) url += `?${qs}`;
+
+      const res = await fetch(url);
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          return data;
+        }
+      }
+    } catch (err) {
+      console.warn('D1 getAllProducts error:', err);
+    }
+    return [];
+  },
+
+  /**
+   * Fetch single product by ID
+   */
+  async getProductById(id: string): Promise<ProductItem | null> {
+    try {
+      const res = await fetch(`/api/products/${id}`);
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch (err) {
+      console.warn(`D1 getProductById error for ${id}:`, err);
+    }
+    return null;
+  },
+
+  /**
+   * Create a new product in Cloudflare D1 SQL
+   */
+  async createProduct(product: Partial<ProductItem>): Promise<ProductItem | null> {
+    try {
+      const res = await fetch('/api/products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(product),
+      });
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch (err) {
+      console.warn('D1 createProduct error:', err);
+    }
+    return null;
+  },
+
+  /**
+   * Update an existing product in Cloudflare D1 SQL
+   */
+  async updateProduct(id: string, product: Partial<ProductItem>): Promise<boolean> {
+    try {
+      const res = await fetch(`/api/products/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(product),
+      });
+      return res.ok;
+    } catch (err) {
+      console.warn(`D1 updateProduct error for ${id}:`, err);
+      return false;
+    }
+  },
+
+  /**
+   * Delete a product from Cloudflare D1 SQL
+   */
+  async deleteProduct(id: string): Promise<boolean> {
+    try {
+      const res = await fetch(`/api/products/${id}`, {
+        method: 'DELETE',
+      });
+      return res.ok;
+    } catch (err) {
+      console.warn(`D1 deleteProduct error for ${id}:`, err);
       return false;
     }
   },
@@ -126,7 +278,10 @@ export const d1Service = {
   /**
    * Submit a new customer review to Cloudflare D1 SQL
    */
-  async submitReview(shopId: string, review: { customerName: string; rating: number; comment: string; dateBn: string }): Promise<boolean> {
+  async submitReview(
+    shopId: string,
+    review: { customerName: string; rating: number; comment: string; dateBn: string }
+  ): Promise<boolean> {
     try {
       const res = await fetch(`/api/shops/${shopId}/reviews`, {
         method: 'POST',

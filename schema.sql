@@ -4,7 +4,27 @@
 -- Database Name: pasher-shop-db
 -- =========================================================
 
--- 1. Shops Table
+-- 1. Users Table (Customer, Merchant, Admin)
+CREATE TABLE IF NOT EXISTS users (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    phone TEXT UNIQUE NOT NULL,
+    role TEXT DEFAULT 'customer', -- 'customer' | 'merchant' | 'admin'
+    password_hash TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 2. Categories Table
+CREATE TABLE IF NOT EXISTS categories (
+    id TEXT PRIMARY KEY,
+    name_bn TEXT NOT NULL,
+    name_en TEXT,
+    icon_name TEXT DEFAULT 'ShoppingBag',
+    display_order INTEGER DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 3. Shops Table
 CREATE TABLE IF NOT EXISTS shops (
     id TEXT PRIMARY KEY,
     name_bn TEXT NOT NULL,
@@ -25,24 +45,27 @@ CREATE TABLE IF NOT EXISTS shops (
     lat REAL NOT NULL,
     lng REAL NOT NULL,
     owner_name TEXT,
+    owner_phone TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
--- 2. Products Table
+-- 4. Products Table
 CREATE TABLE IF NOT EXISTS products (
     id TEXT PRIMARY KEY,
     shop_id TEXT NOT NULL,
     name_bn TEXT NOT NULL,
+    category_id TEXT DEFAULT 'grocery',
     price REAL NOT NULL,
     original_price REAL,
     unit TEXT DEFAULT 'কেজি',
     in_stock INTEGER DEFAULT 1,
     image_url TEXT,
+    description_bn TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (shop_id) REFERENCES shops(id) ON DELETE CASCADE
 );
 
--- 3. Customer Reviews Table
+-- 5. Customer Reviews Table
 CREATE TABLE IF NOT EXISTS reviews (
     id TEXT PRIMARY KEY,
     shop_id TEXT NOT NULL,
@@ -54,7 +77,7 @@ CREATE TABLE IF NOT EXISTS reviews (
     FOREIGN KEY (shop_id) REFERENCES shops(id) ON DELETE CASCADE
 );
 
--- 4. Shop Inquiries / Orders Table
+-- 6. Shop Inquiries / Orders Table
 CREATE TABLE IF NOT EXISTS inquiries (
     id TEXT PRIMARY KEY,
     shop_id TEXT NOT NULL,
@@ -68,3 +91,10 @@ CREATE TABLE IF NOT EXISTS inquiries (
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (shop_id) REFERENCES shops(id) ON DELETE CASCADE
 );
+
+-- High Performance Indexes
+CREATE INDEX IF NOT EXISTS idx_shops_category ON shops(category_id);
+CREATE INDEX IF NOT EXISTS idx_shops_area ON shops(area);
+CREATE INDEX IF NOT EXISTS idx_products_shop_id ON products(shop_id);
+CREATE INDEX IF NOT EXISTS idx_products_category ON products(category_id);
+CREATE INDEX IF NOT EXISTS idx_reviews_shop_id ON reviews(shop_id);

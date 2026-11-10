@@ -81,11 +81,20 @@ export default function App() {
 
   const toggleTheme = () => setIsDarkMode((prev) => !prev);
 
-  // Dynamic shops state initialized from localStorage or SHOPS
+  // Dynamic shops state initialized from localStorage or SHOPS (filtered of any legacy demo shops)
   const [allShops, setAllShops] = useState<Shop[]>(() => {
     try {
       const saved = localStorage.getItem('pasher_shop_list');
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed: Shop[] = JSON.parse(saved);
+        const cleaned = parsed.filter(
+          (s) => !['shop-1', 'shop-2', 'shop-3'].includes(s.id)
+        );
+        if (cleaned.length !== parsed.length) {
+          localStorage.setItem('pasher_shop_list', JSON.stringify(cleaned));
+        }
+        return cleaned;
+      }
     } catch (e) {
       console.error(e);
     }
@@ -95,7 +104,12 @@ export default function App() {
   // Owned shop ID (only shopkeepers who registered/own a shop have this)
   const [myShopId, setMyShopId] = useState<string | null>(() => {
     try {
-      return localStorage.getItem('pasher_shop_my_shop_id') || null;
+      const saved = localStorage.getItem('pasher_shop_my_shop_id');
+      if (saved && ['shop-1', 'shop-2', 'shop-3'].includes(saved)) {
+        localStorage.removeItem('pasher_shop_my_shop_id');
+        return null;
+      }
+      return saved || null;
     } catch (e) {
       return null;
     }
@@ -107,11 +121,20 @@ export default function App() {
     return allShops.find((s) => s.id === myShopId) || null;
   }, [allShops, myShopId]);
 
-  // Sync shops with Cloudflare D1 SQL database (DB: pasher-shop-db)
+  // Dynamic products state synced with Cloudflare D1 SQL database
+  const [allProducts, setAllProducts] = useState<ProductItem[]>([]);
+
+  // Sync shops & products with Cloudflare D1 SQL database (DB: pasher-shop-db)
   React.useEffect(() => {
     d1Service.getAllShops().then((shopsFromD1) => {
       if (shopsFromD1 && shopsFromD1.length > 0) {
         setAllShops(shopsFromD1);
+      }
+    });
+
+    d1Service.getAllProducts().then((productsFromD1) => {
+      if (productsFromD1 && productsFromD1.length > 0) {
+        setAllProducts(productsFromD1);
       }
     });
   }, []);
@@ -145,14 +168,6 @@ export default function App() {
 
     // Update in Cloudflare D1 SQL (DB: pasher-shop-db)
     d1Service.updateShop(updatedShop);
-  };
-
-  const handleSelectDemoShop = () => {
-    const demo = allShops[0] || SHOPS[0];
-    setMyShopId(demo.id);
-    try {
-      localStorage.setItem('pasher_shop_my_shop_id', demo.id);
-    } catch (e) {}
   };
 
   // Listen to Google Maps Demo Key quota event
@@ -283,7 +298,36 @@ export default function App() {
 
   // Filtered Products based on search and category
   const filteredProducts = useMemo(() => {
-    return FEATURED_PRODUCTS.filter((product) => {
+    const combinedProducts: ProductItem[] = [...allProducts];
+
+    // Ensure shop featured products are represented
+    allShops.forEach((s) => {
+      if (Array.isArray(s.featuredProducts)) {
+        s.featuredProducts.forEach((p, idx) => {
+          const exists = combinedProducts.some(
+            (cp) => cp.shopId === s.id && cp.nameBn === p.nameBn
+          );
+          if (!exists) {
+            combinedProducts.push({
+              id: `${s.id}-fp-${idx}`,
+              shopId: s.id,
+              nameBn: p.nameBn,
+              category: s.categoryId,
+              price: p.price,
+              unit: 'কেজি',
+              imageUrl: s.coverImage || '',
+              shopName: s.nameBn,
+              shopArea: s.area,
+              isAvailable: true,
+              stockStatus: 'ইন স্টক',
+              descriptionBn: '',
+            });
+          }
+        });
+      }
+    });
+
+    return combinedProducts.filter((product) => {
       if (selectedCategory !== 'all' && product.category !== selectedCategory) {
         return false;
       }
@@ -295,7 +339,7 @@ export default function App() {
       }
       return true;
     });
-  }, [selectedCategory, searchQuery]);
+  }, [allProducts, allShops, selectedCategory, searchQuery]);
 
   // Navigation handlers
   const handleNavigateView = (view: AppView) => {
@@ -385,7 +429,6 @@ export default function App() {
             onOpenCustomerPreview={(shop) => setActiveShop(shop)}
             onBackToHome={() => setCurrentView('home')}
             onOpenAddShop={() => setIsAddShopOpen(true)}
-            onSelectDemoShop={handleSelectDemoShop}
           />
         ) : (
           <CustomerDashboard
@@ -413,7 +456,7 @@ export default function App() {
         />
       ) : currentView === 'products' ? (
         <ProductsPage
-          products={filteredProducts.length > 0 ? filteredProducts : FEATURED_PRODUCTS}
+          products={filteredProducts}
           selectedCategory={selectedCategory}
           onSelectCategory={(catId) => setSelectedCategory(catId)}
           onSelectProduct={(product) => setActiveProduct(product)}
@@ -478,7 +521,7 @@ export default function App() {
 
             {/* Featured Products Section */}
             <FeaturedProductsSection
-              products={filteredProducts.length > 0 ? filteredProducts : FEATURED_PRODUCTS}
+              products={filteredProducts}
               onSelectProduct={(product) => setActiveProduct(product)}
               onSelectShopById={handleSelectShopById}
             />

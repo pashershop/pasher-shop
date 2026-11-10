@@ -180,7 +180,29 @@ export const ShopsPage: React.FC<ShopsPageProps> = ({
               </span>
             </div>
 
-            <div className="space-y-4 sm:space-y-5 w-full">
+            {filtered.length === 0 ? (
+              <div className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-8 sm:p-14 text-center space-y-4">
+                <div className="w-16 h-16 rounded-2xl bg-amber-50 dark:bg-amber-950/40 text-[#FF7900] flex items-center justify-center mx-auto">
+                  <Store className="w-8 h-8" />
+                </div>
+                <h3 className="text-lg font-black text-slate-800 dark:text-slate-100">
+                  {searchQuery ? `"${searchQuery}" এর জন্য কোনো দোকান পাওয়া যায়নি` : 'বর্তমানে কোনো দোকান তালিকাভুক্ত নেই'}
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto">
+                  আপনার এলাকার অবস্থান পরিবর্তন করুন অথবা প্রথম দোকানদার হিসেবে বিনামূল্যে আপনার দোকান যুক্ত করুন।
+                </p>
+                <div className="pt-2 flex justify-center gap-3">
+                  <button
+                    onClick={onOpenAddShopModal}
+                    className="px-5 py-2.5 rounded-xl bg-[#0B4A8A] hover:bg-[#093a6d] text-white text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Plus className="w-4 h-4 text-[#FF7900]" />
+                    <span>বিনামূল্যে দোকান যুক্ত করুন</span>
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4 sm:space-y-5 w-full">
               {filtered.map((shop) => (
                 <div
                   key={shop.id}
@@ -297,7 +319,8 @@ export const ShopsPage: React.FC<ShopsPageProps> = ({
                   </div>
                 </div>
               ))}
-            </div>
+              </div>
+            )}
           </div>
         )}
 

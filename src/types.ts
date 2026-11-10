@@ -30,6 +30,7 @@ export interface ProductItem {
   shopArea: string;
   isAvailable: boolean;
   stockStatus: 'ইন স্টক' | 'সীমিত স্টক';
+  inStock?: boolean;
   descriptionBn: string;
   originalPrice?: number;
 }

@@ -8,6 +8,9 @@
     "start": "node server.ts",
     "build": "vite build",
     "preview": "vite preview",
+    "deploy": "npm run build && wrangler deploy",
+    "d1:migrate": "wrangler d1 execute pasher-shop-db --file=./schema.sql --remote",
+    "d1:migrate:local": "wrangler d1 execute pasher-shop-db --file=./schema.sql --local",
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit"
   },

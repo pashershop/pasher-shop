@@ -18,7 +18,10 @@ app.use(express.json());
 // Binding: DB, Database: pasher-shop-db
 const CLOUDFLARE_ACCOUNT_ID = process.env.CLOUDFLARE_ACCOUNT_ID || '';
 const CLOUDFLARE_API_TOKEN = process.env.CLOUDFLARE_API_TOKEN || '';
-const CLOUDFLARE_D1_DATABASE_ID = process.env.CLOUDFLARE_D1_DATABASE_ID || process.env.CLOUDFLARE_D1_DATABASE_NAME || 'pasher-shop-db';
+const CLOUDFLARE_D1_DATABASE_ID =
+  process.env.CLOUDFLARE_D1_DATABASE_ID ||
+  process.env.CLOUDFLARE_D1_DATABASE_NAME ||
+  'pasher-shop-db';
 const CLOUDFLARE_D1_BINDING = process.env.CLOUDFLARE_D1_BINDING || 'DB';
 
 const hasCloudflareCredentials = Boolean(CLOUDFLARE_ACCOUNT_ID && CLOUDFLARE_API_TOKEN);
@@ -31,18 +34,40 @@ if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
 }
 
-// Initial fallback dataset if pasher-shop-db.json does not exist
+const DEFAULT_CATEGORIES = [
+  { id: 'grocery', nameBn: 'মুদি দোকান', nameEn: 'Grocery', iconName: 'ShoppingBag', count: 0 },
+  { id: 'pharmacy', nameBn: 'ফার্মেসি', nameEn: 'Pharmacy', iconName: 'HeartPulse', count: 0 },
+  { id: 'vegetable_bazaar', nameBn: 'কাঁচাবাজার', nameEn: 'Vegetables', iconName: 'Carrot', count: 0 },
+  { id: 'fruits', nameBn: 'ফলমূল', nameEn: 'Fruits', iconName: 'Apple', count: 0 },
+  { id: 'clothing', nameBn: 'পোশাক', nameEn: 'Clothing', iconName: 'Shirt', count: 0 },
+  { id: 'electronics', nameBn: 'ইলেকট্রনিক্স', nameEn: 'Electronics', iconName: 'Smartphone', count: 0 },
+  { id: 'restaurant', nameBn: 'রেস্টুরেন্ট', nameEn: 'Restaurant', iconName: 'Utensils', count: 0 },
+  { id: 'household', nameBn: 'গৃহস্থালি', nameEn: 'Household', iconName: 'Home', count: 0 },
+  { id: 'stationery', nameBn: 'স্টেশনারি', nameEn: 'Stationery', iconName: 'BookOpen', count: 0 },
+  { id: 'all', nameBn: 'আরও দেখুন', nameEn: 'Explore More', iconName: 'LayoutGrid', count: 0 },
+];
+
 function getLocalD1Data() {
   if (fs.existsSync(DB_FILE)) {
     try {
-      return JSON.parse(fs.readFileSync(DB_FILE, 'utf-8'));
+      const data = JSON.parse(fs.readFileSync(DB_FILE, 'utf-8'));
+      if (!data.categories) data.categories = [];
+      if (!data.shops) data.shops = [];
+      if (!data.products) data.products = [];
+      if (!data.reviews) data.reviews = {};
+      if (!data.inquiries) data.inquiries = [];
+      if (!data.users) data.users = [];
+      return data;
     } catch (e) {
       console.error('Error reading pasher-shop-db.json:', e);
     }
   }
 
   const initialData = {
+    users: [],
+    categories: [],
     shops: [],
+    products: [],
     reviews: {},
     inquiries: [],
   };
@@ -59,7 +84,7 @@ function saveLocalD1Data(data: any) {
   }
 }
 
-// Helper to query Cloudflare D1 REST API
+// Helper to query Cloudflare D1 REST API using prepared statements
 async function queryCloudflareD1(sql: string, params: any[] = []) {
   if (!hasCloudflareCredentials) {
     return null;
@@ -71,13 +96,13 @@ async function queryCloudflareD1(sql: string, params: any[] = []) {
     const response = await fetch(url, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${CLOUDFLARE_API_TOKEN}`,
+        Authorization: `Bearer ${CLOUDFLARE_API_TOKEN}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ sql, params }),
     });
 
-    const data = await response.json();
+    const data = (await response.json()) as any;
     if (data.success && data.result && data.result[0]) {
       return data.result[0].results;
     }
@@ -89,10 +114,8 @@ async function queryCloudflareD1(sql: string, params: any[] = []) {
 }
 
 // ----------------------------------------------------
-// Cloudflare D1 REST API Endpoints
+// 0. Cloudflare D1 Status Endpoint: GET /api/d1/status
 // ----------------------------------------------------
-
-// 1. D1 Connection Status
 app.get('/api/d1/status', async (_req, res) => {
   res.json({
     binding: CLOUDFLARE_D1_BINDING,
@@ -105,26 +128,189 @@ app.get('/api/d1/status', async (_req, res) => {
   });
 });
 
-// 2. Get All Shops (SELECT * FROM shops)
-app.get('/api/shops', async (_req, res) => {
-  // If remote Cloudflare D1 is configured, query it
+// ----------------------------------------------------
+// 1. Categories: GET /api/categories
+// ----------------------------------------------------
+app.get('/api/categories', async (_req, res) => {
   if (hasCloudflareCredentials) {
-    const remoteShops = await queryCloudflareD1('SELECT * FROM shops ORDER BY created_at DESC');
-    if (remoteShops && Array.isArray(remoteShops) && remoteShops.length > 0) {
-      return res.json(remoteShops);
+    const remote = await queryCloudflareD1(
+      'SELECT id, name_bn as nameBn, name_en as nameEn, icon_name as iconName, display_order FROM categories ORDER BY display_order ASC'
+    );
+    if (remote && Array.isArray(remote) && remote.length > 0) {
+      return res.json(remote);
     }
   }
 
-  // Fallback to local D1 store
   const data = getLocalD1Data();
-  res.json(data.shops || []);
+  if (data.categories && data.categories.length > 0) {
+    return res.json(data.categories);
+  }
+
+  res.json(DEFAULT_CATEGORIES);
 });
 
-// 3. Create Shop (INSERT INTO shops ...)
+// ----------------------------------------------------
+// 2. Shops: GET /api/shops
+// ----------------------------------------------------
+app.get('/api/shops', async (req, res) => {
+  const { category, area, search } = req.query;
+
+  if (hasCloudflareCredentials) {
+    let query = 'SELECT * FROM shops WHERE 1=1';
+    const params: any[] = [];
+
+    if (category && category !== 'all') {
+      query += ' AND category_id = ?';
+      params.push(category);
+    }
+    if (area && typeof area === 'string' && !area.includes('সকল এলাকা')) {
+      query += ' AND (area LIKE ? OR address_bn LIKE ?)';
+      params.push(`%${area}%`, `%${area}%`);
+    }
+    if (search && typeof search === 'string') {
+      query += ' AND (name_bn LIKE ? OR category_bn LIKE ? OR address_bn LIKE ?)';
+      params.push(`%${search}%`, `%${search}%`, `%${search}%`);
+    }
+    query += ' ORDER BY created_at DESC';
+
+    const remoteShops = await queryCloudflareD1(query, params);
+    if (remoteShops && Array.isArray(remoteShops)) {
+      const formatted = remoteShops.map((row: any) => ({
+        id: row.id,
+        nameBn: row.name_bn,
+        categoryId: row.category_id,
+        categoryBn: row.category_bn,
+        addressBn: row.address_bn,
+        area: row.area,
+        distance: row.distance || '০ কিমি',
+        rating: Number(row.rating) || 5.0,
+        reviewCount: Number(row.review_count) || 0,
+        isOpen: Boolean(row.is_open),
+        timingBn: row.timing_bn || 'সকাল ৮:০০ - রাত ১১:০০',
+        phone: row.phone,
+        coverImage: row.cover_image,
+        bannerImage: row.banner_image || row.cover_image,
+        deliveryAvailable: Boolean(row.delivery_available),
+        minOrder: Number(row.min_order) || 0,
+        lat: Number(row.lat),
+        lng: Number(row.lng),
+        ownerName: row.owner_name || '',
+        ownerPhone: row.owner_phone || '',
+        featuredProducts: [],
+      }));
+      return res.json(formatted);
+    }
+  }
+
+  // Local fallback with filtering
+  const data = getLocalD1Data();
+  let list = data.shops || [];
+
+  if (category && category !== 'all') {
+    list = list.filter((s: any) => s.categoryId === category);
+  }
+  if (area && typeof area === 'string' && !area.includes('সকল এলাকা')) {
+    const q = area.toLowerCase();
+    list = list.filter(
+      (s: any) =>
+        (s.area && s.area.toLowerCase().includes(q)) ||
+        (s.addressBn && s.addressBn.toLowerCase().includes(q))
+    );
+  }
+  if (search && typeof search === 'string') {
+    const q = search.toLowerCase();
+    list = list.filter(
+      (s: any) =>
+        (s.nameBn && s.nameBn.toLowerCase().includes(q)) ||
+        (s.categoryBn && s.categoryBn.toLowerCase().includes(q)) ||
+        (s.addressBn && s.addressBn.toLowerCase().includes(q))
+    );
+  }
+
+  res.json(list);
+});
+
+// ----------------------------------------------------
+// 3. Shop by ID: GET /api/shops/:id
+// ----------------------------------------------------
+app.get('/api/shops/:id', async (req, res) => {
+  const shopId = req.params.id;
+
+  if (hasCloudflareCredentials) {
+    const remoteShop = await queryCloudflareD1('SELECT * FROM shops WHERE id = ?', [shopId]);
+    if (remoteShop && remoteShop[0]) {
+      const row = remoteShop[0];
+      const remoteProds = await queryCloudflareD1(
+        'SELECT * FROM products WHERE shop_id = ? ORDER BY created_at DESC',
+        [shopId]
+      );
+      const products = (remoteProds || []).map((p: any) => ({
+        id: p.id,
+        nameBn: p.name_bn,
+        price: Number(p.price),
+        originalPrice: p.original_price ? Number(p.original_price) : undefined,
+        unit: p.unit || 'কেজি',
+        inStock: Boolean(p.in_stock),
+        imageUrl: p.image_url || '',
+        category: p.category_id || row.category_id,
+        shopId: p.shop_id,
+        shopName: row.name_bn,
+        shopArea: row.area,
+      }));
+
+      return res.json({
+        id: row.id,
+        nameBn: row.name_bn,
+        categoryId: row.category_id,
+        categoryBn: row.category_bn,
+        addressBn: row.address_bn,
+        area: row.area,
+        distance: row.distance || '০ কিমি',
+        rating: Number(row.rating) || 5.0,
+        reviewCount: Number(row.review_count) || 0,
+        isOpen: Boolean(row.is_open),
+        timingBn: row.timing_bn || 'সকাল ৮:০০ - রাত ১১:০০',
+        phone: row.phone,
+        coverImage: row.cover_image,
+        bannerImage: row.banner_image || row.cover_image,
+        deliveryAvailable: Boolean(row.delivery_available),
+        minOrder: Number(row.min_order) || 0,
+        lat: Number(row.lat),
+        lng: Number(row.lng),
+        ownerName: row.owner_name || '',
+        ownerPhone: row.owner_phone || '',
+        featuredProducts: products.map((p: any) => ({ nameBn: p.nameBn, price: p.price })),
+        products,
+      });
+    }
+  }
+
+  const data = getLocalD1Data();
+  const shop = (data.shops || []).find((s: any) => s.id === shopId);
+  if (!shop) {
+    return res.status(404).json({ error: 'দোকানটি পাওয়া যায়নি', success: false });
+  }
+
+  const products = (data.products || []).filter((p: any) => p.shopId === shopId);
+  res.json({
+    ...shop,
+    products,
+  });
+});
+
+// ----------------------------------------------------
+// 4. Create Shop: POST /api/shops
+// ----------------------------------------------------
 app.post('/api/shops', async (req, res) => {
   const newShop = req.body;
-  if (!newShop || !newShop.nameBn) {
-    return res.status(400).json({ error: 'দোকানের নাম আবশ্যক' });
+  if (!newShop || !newShop.nameBn || !newShop.nameBn.trim()) {
+    return res.status(400).json({ error: 'দোকানের নাম (nameBn) আবশ্যক', success: false });
+  }
+  if (!newShop.phone || !newShop.phone.trim()) {
+    return res.status(400).json({ error: 'যোগাযোগের ফোন নম্বর আবশ্যক', success: false });
+  }
+  if (newShop.lat === undefined || newShop.lng === undefined) {
+    return res.status(400).json({ error: 'দোকানের রিয়েল জিপিএস লোকেশন আবশ্যক', success: false });
   }
 
   const shopId = newShop.id || `shop-${Date.now()}`;
@@ -134,31 +320,39 @@ app.post('/api/shops', async (req, res) => {
     isOpen: newShop.isOpen ?? true,
     rating: newShop.rating ?? 5.0,
     reviewCount: newShop.reviewCount ?? 0,
+    deliveryAvailable: newShop.deliveryAvailable ?? true,
+    minOrder: Number(newShop.minOrder) || 0,
     featuredProducts: newShop.featuredProducts || [],
   };
 
-  // Attempt Cloudflare D1 SQL insert
   if (hasCloudflareCredentials) {
     await queryCloudflareD1(
-      `INSERT INTO shops (id, name_bn, category_id, category_bn, address_bn, area, phone, lat, lng, is_open, delivery_available, min_order, timing_bn, cover_image, banner_image, owner_name)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO shops (
+        id, name_bn, category_id, category_bn, address_bn, area, distance,
+        rating, review_count, is_open, timing_bn, phone, cover_image, banner_image,
+        delivery_available, min_order, lat, lng, owner_name, owner_phone
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         completeShop.id,
         completeShop.nameBn,
         completeShop.categoryId || 'grocery',
         completeShop.categoryBn || 'মুদি দোকান',
-        completeShop.addressBn,
-        completeShop.area,
+        completeShop.addressBn || '',
+        completeShop.area || '',
+        completeShop.distance || '০ কিমি',
+        completeShop.rating,
+        completeShop.reviewCount,
+        completeShop.isOpen ? 1 : 0,
+        completeShop.timingBn || 'সকাল ৮:০০ - রাত ১১:০০',
         completeShop.phone,
+        completeShop.coverImage || '',
+        completeShop.bannerImage || completeShop.coverImage || '',
+        completeShop.deliveryAvailable ? 1 : 0,
+        completeShop.minOrder,
         completeShop.lat,
         completeShop.lng,
-        completeShop.isOpen ? 1 : 0,
-        completeShop.deliveryAvailable ? 1 : 0,
-        completeShop.minOrder || 0,
-        completeShop.timingBn || 'সকাল ৮:০০ - রাত ১১:০০',
-        completeShop.coverImage,
-        completeShop.bannerImage || completeShop.coverImage,
         completeShop.ownerName || '',
+        completeShop.ownerPhone || completeShop.phone,
       ]
     );
   }
@@ -166,27 +360,58 @@ app.post('/api/shops', async (req, res) => {
   // Persist locally in pasher-shop-db.json
   const data = getLocalD1Data();
   data.shops = [completeShop, ...data.shops.filter((s: any) => s.id !== shopId)];
-  saveLocalD1Data(data);
 
+  // Also sync initial featured products into products array if provided
+  if (Array.isArray(completeShop.featuredProducts)) {
+    completeShop.featuredProducts.forEach((fp: any, idx: number) => {
+      if (fp.nameBn && fp.price) {
+        data.products.push({
+          id: `prod-${Date.now()}-${idx}`,
+          shopId,
+          nameBn: fp.nameBn,
+          category: completeShop.categoryId || 'grocery',
+          price: Number(fp.price),
+          unit: 'কেজি',
+          inStock: true,
+          shopName: completeShop.nameBn,
+          shopArea: completeShop.area,
+        });
+      }
+    });
+  }
+
+  saveLocalD1Data(data);
   res.status(201).json(completeShop);
 });
 
-// 4. Update Shop (UPDATE shops SET ...)
+// ----------------------------------------------------
+// 5. Update Shop: PUT /api/shops/:id
+// ----------------------------------------------------
 app.put('/api/shops/:id', async (req, res) => {
   const shopId = req.params.id;
   const updatedData = req.body;
 
   if (hasCloudflareCredentials) {
     await queryCloudflareD1(
-      `UPDATE shops SET name_bn = ?, phone = ?, address_bn = ?, timing_bn = ?, delivery_available = ?, min_order = ?, banner_image = ? WHERE id = ?`,
+      `UPDATE shops SET
+        name_bn = COALESCE(?, name_bn),
+        phone = COALESCE(?, phone),
+        address_bn = COALESCE(?, address_bn),
+        timing_bn = COALESCE(?, timing_bn),
+        delivery_available = COALESCE(?, delivery_available),
+        min_order = COALESCE(?, min_order),
+        banner_image = COALESCE(?, banner_image),
+        is_open = COALESCE(?, is_open)
+      WHERE id = ?`,
       [
         updatedData.nameBn,
         updatedData.phone,
         updatedData.addressBn,
         updatedData.timingBn,
-        updatedData.deliveryAvailable ? 1 : 0,
-        updatedData.minOrder || 0,
+        updatedData.deliveryAvailable !== undefined ? (updatedData.deliveryAvailable ? 1 : 0) : null,
+        updatedData.minOrder !== undefined ? Number(updatedData.minOrder) : null,
         updatedData.bannerImage,
+        updatedData.isOpen !== undefined ? (updatedData.isOpen ? 1 : 0) : null,
         shopId,
       ]
     );
@@ -196,10 +421,250 @@ app.put('/api/shops/:id', async (req, res) => {
   data.shops = data.shops.map((s: any) => (s.id === shopId ? { ...s, ...updatedData } : s));
   saveLocalD1Data(data);
 
-  res.json({ success: true, id: shopId });
+  res.json({ success: true, id: shopId, message: 'দোকান তথ্য সফলভাবে সংরক্ষিত হয়েছে' });
 });
 
-// 5. Get Reviews for a shop
+// ----------------------------------------------------
+// 6. Delete Shop: DELETE /api/shops/:id
+// ----------------------------------------------------
+app.delete('/api/shops/:id', async (req, res) => {
+  const shopId = req.params.id;
+
+  if (hasCloudflareCredentials) {
+    await queryCloudflareD1('DELETE FROM shops WHERE id = ?', [shopId]);
+  }
+
+  const data = getLocalD1Data();
+  data.shops = data.shops.filter((s: any) => s.id !== shopId);
+  data.products = data.products.filter((p: any) => p.shopId !== shopId);
+  delete data.reviews[shopId];
+  saveLocalD1Data(data);
+
+  res.json({ success: true, id: shopId, message: 'দোকানটি সফলভাবে মুছে ফেলা হয়েছে' });
+});
+
+// ----------------------------------------------------
+// 7. Products: GET /api/products
+// ----------------------------------------------------
+app.get('/api/products', async (req, res) => {
+  const { shop_id, category, search } = req.query;
+
+  if (hasCloudflareCredentials) {
+    let query = `
+      SELECT p.*, s.name_bn as shop_name, s.area as shop_area, s.phone as shop_phone
+      FROM products p
+      LEFT JOIN shops s ON p.shop_id = s.id
+      WHERE 1=1
+    `;
+    const params: any[] = [];
+
+    if (shop_id && typeof shop_id === 'string') {
+      query += ' AND p.shop_id = ?';
+      params.push(shop_id);
+    }
+    if (category && category !== 'all') {
+      query += ' AND p.category_id = ?';
+      params.push(category);
+    }
+    if (search && typeof search === 'string') {
+      query += ' AND (p.name_bn LIKE ? OR s.name_bn LIKE ?)';
+      params.push(`%${search}%`, `%${search}%`);
+    }
+    query += ' ORDER BY p.created_at DESC';
+
+    const remoteProds = await queryCloudflareD1(query, params);
+    if (remoteProds && Array.isArray(remoteProds)) {
+      const formatted = remoteProds.map((row: any) => ({
+        id: row.id,
+        shopId: row.shop_id,
+        nameBn: row.name_bn,
+        category: row.category_id || 'grocery',
+        price: Number(row.price),
+        originalPrice: row.original_price ? Number(row.original_price) : undefined,
+        unit: row.unit || 'কেজি',
+        inStock: Boolean(row.in_stock),
+        stockStatus: row.in_stock ? 'ইন স্টক' : 'স্টক শেষ',
+        imageUrl: row.image_url || '',
+        descriptionBn: row.description_bn || '',
+        shopName: row.shop_name || '',
+        shopArea: row.shop_area || '',
+        shopPhone: row.shop_phone || '',
+        isAvailable: Boolean(row.in_stock),
+      }));
+      return res.json(formatted);
+    }
+  }
+
+  // Local fallback
+  const data = getLocalD1Data();
+  let list = data.products || [];
+
+  if (shop_id && typeof shop_id === 'string') {
+    list = list.filter((p: any) => p.shopId === shop_id);
+  }
+  if (category && category !== 'all') {
+    list = list.filter((p: any) => p.category === category || p.categoryId === category);
+  }
+  if (search && typeof search === 'string') {
+    const q = search.toLowerCase();
+    list = list.filter(
+      (p: any) =>
+        (p.nameBn && p.nameBn.toLowerCase().includes(q)) ||
+        (p.shopName && p.shopName.toLowerCase().includes(q))
+    );
+  }
+
+  res.json(list);
+});
+
+// ----------------------------------------------------
+// 8. Product by ID: GET /api/products/:id
+// ----------------------------------------------------
+app.get('/api/products/:id', async (req, res) => {
+  const prodId = req.params.id;
+
+  if (hasCloudflareCredentials) {
+    const remote = await queryCloudflareD1(
+      `SELECT p.*, s.name_bn as shop_name, s.area as shop_area, s.phone as shop_phone
+       FROM products p
+       LEFT JOIN shops s ON p.shop_id = s.id
+       WHERE p.id = ?`,
+      [prodId]
+    );
+    if (remote && remote[0]) {
+      const row = remote[0];
+      return res.json({
+        id: row.id,
+        shopId: row.shop_id,
+        nameBn: row.name_bn,
+        category: row.category_id || 'grocery',
+        price: Number(row.price),
+        originalPrice: row.original_price ? Number(row.original_price) : undefined,
+        unit: row.unit || 'কেজি',
+        inStock: Boolean(row.in_stock),
+        stockStatus: row.in_stock ? 'ইন স্টক' : 'স্টক শেষ',
+        imageUrl: row.image_url || '',
+        descriptionBn: row.description_bn || '',
+        shopName: row.shop_name || '',
+        shopArea: row.shop_area || '',
+        shopPhone: row.shop_phone || '',
+        isAvailable: Boolean(row.in_stock),
+      });
+    }
+  }
+
+  const data = getLocalD1Data();
+  const prod = (data.products || []).find((p: any) => p.id === prodId);
+  if (!prod) {
+    return res.status(404).json({ error: 'পণ্যটি পাওয়া যায়নি', success: false });
+  }
+
+  res.json(prod);
+});
+
+// ----------------------------------------------------
+// 9. Create Product: POST /api/products
+// ----------------------------------------------------
+app.post('/api/products', async (req, res) => {
+  const body = req.body;
+  if (!body.shopId || !body.nameBn || body.price === undefined) {
+    return res.status(400).json({ error: 'দোকান আইডি (shopId), নাম (nameBn) এবং দাম আবশ্যক', success: false });
+  }
+
+  const id = body.id || `prod-${Date.now()}`;
+  const completeProduct = {
+    ...body,
+    id,
+    price: Number(body.price),
+    unit: body.unit || 'কেজি',
+    inStock: body.inStock !== false,
+  };
+
+  if (hasCloudflareCredentials) {
+    await queryCloudflareD1(
+      `INSERT INTO products (
+        id, shop_id, name_bn, category_id, price, original_price, unit, in_stock, image_url, description_bn
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        id,
+        completeProduct.shopId,
+        completeProduct.nameBn.trim(),
+        completeProduct.category || completeProduct.categoryId || 'grocery',
+        completeProduct.price,
+        completeProduct.originalPrice ? Number(completeProduct.originalPrice) : null,
+        completeProduct.unit,
+        completeProduct.inStock ? 1 : 0,
+        completeProduct.imageUrl || '',
+        completeProduct.descriptionBn || '',
+      ]
+    );
+  }
+
+  const data = getLocalD1Data();
+  data.products = [completeProduct, ...data.products.filter((p: any) => p.id !== id)];
+  saveLocalD1Data(data);
+
+  res.status(201).json(completeProduct);
+});
+
+// ----------------------------------------------------
+// 10. Update Product: PUT /api/products/:id
+// ----------------------------------------------------
+app.put('/api/products/:id', async (req, res) => {
+  const prodId = req.params.id;
+  const body = req.body;
+
+  if (hasCloudflareCredentials) {
+    await queryCloudflareD1(
+      `UPDATE products SET
+        name_bn = COALESCE(?, name_bn),
+        price = COALESCE(?, price),
+        original_price = COALESCE(?, original_price),
+        unit = COALESCE(?, unit),
+        in_stock = COALESCE(?, in_stock),
+        image_url = COALESCE(?, image_url),
+        description_bn = COALESCE(?, description_bn)
+      WHERE id = ?`,
+      [
+        body.nameBn,
+        body.price !== undefined ? Number(body.price) : null,
+        body.originalPrice !== undefined ? Number(body.originalPrice) : null,
+        body.unit,
+        body.inStock !== undefined ? (body.inStock ? 1 : 0) : null,
+        body.imageUrl,
+        body.descriptionBn,
+        prodId,
+      ]
+    );
+  }
+
+  const data = getLocalD1Data();
+  data.products = data.products.map((p: any) => (p.id === prodId ? { ...p, ...body } : p));
+  saveLocalD1Data(data);
+
+  res.json({ success: true, id: prodId, message: 'পণ্য সফলভাবে আপডেট হয়েছে' });
+});
+
+// ----------------------------------------------------
+// 11. Delete Product: DELETE /api/products/:id
+// ----------------------------------------------------
+app.delete('/api/products/:id', async (req, res) => {
+  const prodId = req.params.id;
+
+  if (hasCloudflareCredentials) {
+    await queryCloudflareD1('DELETE FROM products WHERE id = ?', [prodId]);
+  }
+
+  const data = getLocalD1Data();
+  data.products = data.products.filter((p: any) => p.id !== prodId);
+  saveLocalD1Data(data);
+
+  res.json({ success: true, id: prodId, message: 'পণ্য সফলভাবে মুছে ফেলা হয়েছে' });
+});
+
+// ----------------------------------------------------
+// 12. Reviews Endpoints: GET & POST /api/shops/:id/reviews
+// ----------------------------------------------------
 app.get('/api/shops/:id/reviews', async (req, res) => {
   const shopId = req.params.id;
 
@@ -218,15 +683,15 @@ app.get('/api/shops/:id/reviews', async (req, res) => {
   res.json(shopReviews);
 });
 
-// 6. Post Review for a shop
 app.post('/api/shops/:id/reviews', async (req, res) => {
   const shopId = req.params.id;
   const { customerName, rating, comment, dateBn } = req.body;
 
   const newReview = {
     id: `rev-${Date.now()}`,
+    shopId,
     customerName: customerName || 'সম্মানিত ক্রেতা',
-    rating: rating || 5,
+    rating: Number(rating) || 5,
     comment: comment || '',
     dateBn: dateBn || 'এইমাত্র',
   };

@@ -154,7 +154,20 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
         </div>
 
         {/* Product Cards Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        {filtered.length === 0 ? (
+          <div className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-8 sm:p-14 text-center space-y-4">
+            <div className="w-16 h-16 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mx-auto">
+              <ShoppingBag className="w-8 h-8" />
+            </div>
+            <h3 className="text-lg font-black text-slate-800 dark:text-slate-100">
+              {searchQuery ? `"${searchQuery}" এর জন্য কোনো পণ্য পাওয়া যায়নি` : 'বর্তমানে কোনো পণ্য তালিকাভুক্ত নেই'}
+            </h3>
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto">
+              দোকানদাররা তাদের দোকানের পণ্য এবং মূল্য যুক্ত করলে এখানে সরাসরি প্রদর্শিত হবে।
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {filtered.map((item) => {
             // Find corresponding shop to get phone
             const shopObj = SHOPS.find((s) => s.id === item.shopId || s.nameBn === item.shopName);
@@ -242,7 +255,8 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
               </div>
             );
           })}
-        </div>
+          </div>
+        )}
 
       </div>
     </div>

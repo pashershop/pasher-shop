@@ -32,6 +32,7 @@ import {
 import { Shop, ProductItem, ShopInquiry } from '../types';
 import { CATEGORIES } from '../data/mockData';
 import { toBnNumber } from '../utils/geoUtils';
+import { d1Service } from '../services/d1Service';
 
 interface ShopkeeperDashboardProps {
   shop: Shop | null;
@@ -39,7 +40,6 @@ interface ShopkeeperDashboardProps {
   onOpenCustomerPreview: (shop: Shop) => void;
   onBackToHome: () => void;
   onOpenAddShop: () => void;
-  onSelectDemoShop?: () => void;
 }
 
 // Preset banner images for banner updater
@@ -80,7 +80,6 @@ export const ShopkeeperDashboard: React.FC<ShopkeeperDashboardProps> = ({
   onOpenCustomerPreview,
   onBackToHome,
   onOpenAddShop,
-  onSelectDemoShop,
 }) => {
   const [activeTab, setActiveTab] = useState<'products' | 'orders' | 'settings' | 'reviews'>('products');
   
@@ -189,6 +188,19 @@ export const ShopkeeperDashboard: React.FC<ShopkeeperDashboardProps> = ({
     }));
     onUpdateShop({ ...shop, featuredProducts: updatedFeatured });
 
+    // Persist to Cloudflare D1 SQL (DB: pasher-shop-db)
+    d1Service.createProduct({
+      id: newProd.id,
+      shopId: shop.id,
+      nameBn: newProd.nameBn,
+      price: newProd.price,
+      unit: newProd.unit,
+      inStock: newProd.inStock,
+      category: shop.categoryId,
+      shopName: shop.nameBn,
+      shopArea: shop.area,
+    });
+
     // Reset Form
     setNewProductName('');
     setNewProductPrice('');
@@ -206,6 +218,9 @@ export const ShopkeeperDashboard: React.FC<ShopkeeperDashboardProps> = ({
       price: p.price,
     }));
     onUpdateShop({ ...shop, featuredProducts: updatedFeatured });
+
+    // Delete in Cloudflare D1 SQL (DB: pasher-shop-db)
+    d1Service.deleteProduct(productId);
   };
 
   // Toggle Product Stock
@@ -214,6 +229,11 @@ export const ShopkeeperDashboard: React.FC<ShopkeeperDashboardProps> = ({
       p.id === productId ? { ...p, inStock: !p.inStock } : p
     );
     setProducts(nextProducts);
+
+    const target = nextProducts.find((p) => p.id === productId);
+    if (target) {
+      d1Service.updateProduct(productId, { inStock: target.inStock });
+    }
   };
 
   // Update Inquiry Status
