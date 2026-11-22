@@ -81,6 +81,22 @@ export const Footer: React.FC<FooterProps> = ({
                   </a>
                 </span>
               </div>
+              <div className="flex items-center gap-2 pt-0.5">
+                <svg viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5 text-[#1877F2] shrink-0">
+                  <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                </svg>
+                <span>
+                  Created by{' '}
+                  <a
+                    href="https://www.facebook.com/mdrobinmia0"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-semibold text-[#1877F2] hover:text-[#0B4A8A] hover:underline transition-colors"
+                  >
+                    MD Robin Mia
+                  </a>
+                </span>
+              </div>
             </div>
           </div>
 
@@ -390,10 +406,22 @@ export const Footer: React.FC<FooterProps> = ({
         </div>
 
         {/* Bottom Copyright Bar */}
-        <div className="pt-8 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-3">
+        <div className="pt-8 flex flex-col md:flex-row items-center justify-between text-xs text-slate-500 gap-3 text-center md:text-left">
           <div>
             © 2026 <span className="font-bold text-[#0B4A8A]">Pasher Shop</span>. All Rights Reserved.
           </div>
+          <a
+            href="https://www.facebook.com/mdrobinmia0"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#1877F2]/10 hover:bg-[#1877F2] text-[#1877F2] hover:text-white font-semibold transition-all duration-150 border border-[#1877F2]/20"
+            title="MD Robin Mia - Facebook Profile"
+          >
+            <svg viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5 shrink-0">
+              <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+            </svg>
+            <span>Created by MD Robin Mia</span>
+          </a>
           <div className="flex items-center gap-1 text-slate-400">
             <span>বাংলাদেশের স্থানীয় ব্যবসায়ীদের সমর্থনে তৈরি</span>
             <Heart className="w-3.5 h-3.5 text-red-500 fill-red-500 inline" />
