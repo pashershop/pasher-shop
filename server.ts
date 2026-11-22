@@ -1250,15 +1250,16 @@ app.post('/api/shops/:id/reviews', async (req, res) => {
 // ----------------------------------------------------
 // 13. Admin Console APIs (/api/admin/*) — ADMIN_PASSWORD Secret Only
 // ----------------------------------------------------
-const ENV_ADMIN_PASSWORD = cleanEnvValue(process.env.ADMIN_PASSWORD);
+const getEnvAdminPassword = () => cleanEnvValue(process.env.ADMIN_PASSWORD);
 
 async function resolveAdminSession(
   req: express.Request
 ): Promise<{ id: string; name: string; phone: string; role: string } | null> {
-  if (!ENV_ADMIN_PASSWORD) return null;
+  const adminSecret = getEnvAdminPassword();
+  if (!adminSecret) return null;
   const authHeader = req.headers.authorization || '';
   const token = authHeader.replace(/^Bearer\s+/i, '').trim();
-  const valid = await verifyAdminToken(token, ENV_ADMIN_PASSWORD);
+  const valid = await verifyAdminToken(token, adminSecret);
   if (!valid) return null;
   return { id: 'admin-secret', name: 'MD Robin Mia', phone: '', role: 'admin' };
 }
@@ -1269,7 +1270,7 @@ app.get('/api/admin/status', async (req, res) => {
     const admin = await resolveAdminSession(req);
     return res.json({
       success: true,
-      passwordConfigured: Boolean(ENV_ADMIN_PASSWORD),
+      passwordConfigured: Boolean(getEnvAdminPassword()),
       authenticated: Boolean(admin),
       admin: admin || null,
     });
@@ -1282,7 +1283,8 @@ app.get('/api/admin/status', async (req, res) => {
 // Admin Login (Password Only via ADMIN_PASSWORD Secret): POST /api/admin/login
 app.post('/api/admin/login', async (req, res) => {
   try {
-    if (!ENV_ADMIN_PASSWORD) {
+    const adminSecret = getEnvAdminPassword();
+    if (!adminSecret) {
       return res.status(503).json({
         success: false,
         error:
@@ -1297,12 +1299,12 @@ app.post('/api/admin/login', async (req, res) => {
       return res.status(400).json({ success: false, error: 'পাসওয়ার্ড প্রদান করুন' });
     }
 
-    if (trimmedPassword !== ENV_ADMIN_PASSWORD) {
+    if (trimmedPassword !== adminSecret) {
       return res.status(401).json({ success: false, error: 'অ্যাডমিন পাসওয়ার্ড সঠিক নয়' });
     }
 
     const expiresAtMs = Date.now() + 7 * 24 * 3600 * 1000;
-    const token = await signAdminToken(ENV_ADMIN_PASSWORD, expiresAtMs);
+    const token = await signAdminToken(adminSecret, expiresAtMs);
 
     return res.json({
       success: true,

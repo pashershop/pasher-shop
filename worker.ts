@@ -167,6 +167,59 @@ async function ensureD1Schema(db: D1Database) {
     ).run();
 
     await db.prepare(
+      `CREATE TABLE IF NOT EXISTS categories (
+        id TEXT PRIMARY KEY,
+        name_bn TEXT NOT NULL,
+        name_en TEXT,
+        icon_name TEXT DEFAULT 'ShoppingBag',
+        display_order INTEGER DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )`
+    ).run();
+
+    await db.prepare(
+      `CREATE TABLE IF NOT EXISTS shops (
+        id TEXT PRIMARY KEY,
+        name_bn TEXT NOT NULL,
+        category_id TEXT NOT NULL,
+        category_bn TEXT NOT NULL,
+        address_bn TEXT NOT NULL,
+        area TEXT NOT NULL,
+        distance TEXT DEFAULT '০ কিমি',
+        rating REAL DEFAULT 5.0,
+        review_count INTEGER DEFAULT 0,
+        is_open INTEGER DEFAULT 1,
+        timing_bn TEXT DEFAULT 'সকাল ৮:০০ - রাত ১১:০০',
+        phone TEXT NOT NULL,
+        cover_image TEXT,
+        banner_image TEXT,
+        delivery_available INTEGER DEFAULT 1,
+        min_order INTEGER DEFAULT 0,
+        lat REAL NOT NULL,
+        lng REAL NOT NULL,
+        owner_name TEXT,
+        owner_phone TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )`
+    ).run();
+
+    await db.prepare(
+      `CREATE TABLE IF NOT EXISTS products (
+        id TEXT PRIMARY KEY,
+        shop_id TEXT NOT NULL,
+        name_bn TEXT NOT NULL,
+        category_id TEXT DEFAULT 'grocery',
+        price REAL NOT NULL,
+        original_price REAL,
+        unit TEXT DEFAULT 'কেজি',
+        in_stock INTEGER DEFAULT 1,
+        image_url TEXT,
+        description_bn TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )`
+    ).run();
+
+    await db.prepare(
       `CREATE TABLE IF NOT EXISTS reviews (
         id TEXT PRIMARY KEY,
         shop_id TEXT NOT NULL,
@@ -241,6 +294,73 @@ export default {
             ? 'Cloudflare D1 SQL (DB: pasher-shop-db) সংযুক্ত ও সক্রিয়'
             : 'Cloudflare D1 SQL বাইন্ডিং পাওয়া যায়নি বা সংযোগে ত্রুটি',
         });
+      }
+
+      // Admin public auth routes (do not depend on D1 binding)
+      const envAdminPassword =
+        typeof env.ADMIN_PASSWORD === 'string'
+          ? env.ADMIN_PASSWORD.trim()
+          : String(env.ADMIN_PASSWORD || '').trim();
+
+      const resolveAdminFromSecret = async () => {
+        if (!envAdminPassword) return null;
+        const authHeader = request.headers.get('Authorization') || '';
+        const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+        const valid = await verifyAdminToken(token, envAdminPassword);
+        if (!valid) return null;
+        return {
+          id: 'admin-secret',
+          name: 'MD Robin Mia',
+          phone: '',
+          role: 'admin' as const,
+        };
+      };
+
+      if (pathname === '/api/admin/status' && method === 'GET') {
+        const admin = await resolveAdminFromSecret();
+        return jsonResponse({
+          success: true,
+          passwordConfigured: Boolean(envAdminPassword),
+          authenticated: Boolean(admin),
+          admin: admin || null,
+        });
+      }
+
+      if (pathname === '/api/admin/login' && method === 'POST') {
+        if (!envAdminPassword) {
+          return errorResponse(
+            'Cloudflare Secret-এ ADMIN_PASSWORD সেট করা নেই। অনুগ্রহ করে Worker Settings -> Variables and Secrets-এ ADMIN_PASSWORD যুক্ত করুন।',
+            503
+          );
+        }
+
+        const body = ((await request.json().catch(() => ({}))) || {}) as any;
+        const password = typeof body.password === 'string' ? body.password.trim() : '';
+        if (!password) {
+          return errorResponse('পাসওয়ার্ড প্রদান করুন', 400);
+        }
+
+        if (password !== envAdminPassword) {
+          return errorResponse('অ্যাডমিন পাসওয়ার্ড সঠিক নয়', 401);
+        }
+
+        const expiresAtMs = Date.now() + 7 * 24 * 3600 * 1000;
+        const token = await signAdminToken(envAdminPassword, expiresAtMs);
+
+        return jsonResponse({
+          success: true,
+          token,
+          admin: {
+            id: 'admin-secret',
+            name: 'MD Robin Mia',
+            phone: '',
+            role: 'admin',
+          },
+        });
+      }
+
+      if (pathname === '/api/admin/logout' && method === 'POST') {
+        return jsonResponse({ success: true, message: 'লগআউট সফল হয়েছে' });
       }
 
       if (!env.DB) {
@@ -961,81 +1081,50 @@ export default {
       }
 
       // ---------------------------------------------------------
-      // 13. Admin Console APIs (/api/admin/*) — Cloudflare Secret ADMIN_PASSWORD
+      // 13. Admin Console Protected APIs (/api/admin/*)
       // ---------------------------------------------------------
       if (pathname.startsWith('/api/admin/')) {
-        const envAdminPassword =
-          typeof env.ADMIN_PASSWORD === 'string' ? env.ADMIN_PASSWORD.trim() : '';
-
-        const resolveAdmin = async () => {
-          if (!envAdminPassword) return null;
-          const authHeader = request.headers.get('Authorization') || '';
-          const token = authHeader.replace(/^Bearer\s+/i, '').trim();
-          const valid = await verifyAdminToken(token, envAdminPassword);
-          if (!valid) return null;
-          return {
-            id: 'admin-secret',
-            name: 'MD Robin Mia',
-            phone: '',
-            role: 'admin' as const,
-          };
-        };
-
-        if (pathname === '/api/admin/status' && method === 'GET') {
-          const admin = await resolveAdmin();
-          return jsonResponse({
-            success: true,
-            passwordConfigured: Boolean(envAdminPassword),
-            authenticated: Boolean(admin),
-            admin: admin || null,
-          });
-        }
-
-        if (pathname === '/api/admin/login' && method === 'POST') {
-          if (!envAdminPassword) {
-            return errorResponse(
-              'Cloudflare Secret-এ ADMIN_PASSWORD সেট করা নেই। অনুগ্রহ করে Worker Settings -> Variables and Secrets-এ ADMIN_PASSWORD যুক্ত করুন।',
-              503
-            );
-          }
-
-          const body = ((await request.json().catch(() => ({}))) || {}) as any;
-          const password = typeof body.password === 'string' ? body.password.trim() : '';
-          if (!password) {
-            return errorResponse('পাসওয়ার্ড প্রদান করুন', 400);
-          }
-
-          if (password !== envAdminPassword) {
-            return errorResponse('অ্যাডমিন পাসওয়ার্ড সঠিক নয়', 401);
-          }
-
-          const expiresAtMs = Date.now() + 7 * 24 * 3600 * 1000;
-          const token = await signAdminToken(envAdminPassword, expiresAtMs);
-
-          return jsonResponse({
-            success: true,
-            token,
-            admin: {
-              id: 'admin-secret',
-              name: 'MD Robin Mia',
-              phone: '',
-              role: 'admin',
-            },
-          });
-        }
-
-        if (pathname === '/api/admin/logout' && method === 'POST') {
-          return jsonResponse({ success: true, message: 'লগআউট সফল হয়েছে' });
-        }
-
-        const admin = await resolveAdmin();
+        const admin = await resolveAdminFromSecret();
         if (!admin) {
           return errorResponse('অননুমোদিত প্রবেশাধিকার। অনুগ্রহ করে অ্যাডমিন লগইন করুন।', 401);
         }
 
         if (pathname === '/api/admin/overview' && method === 'GET') {
-          const { results: rShops } = await env.DB.prepare('SELECT * FROM shops ORDER BY created_at DESC').all<any>();
-          const shops = (rShops || []).map((row: any) => ({
+          let rShops: any[] = [];
+          let rProds: any[] = [];
+          let rUsers: any[] = [];
+          let rReviews: any[] = [];
+
+          try {
+            const res = await env.DB.prepare('SELECT * FROM shops ORDER BY created_at DESC').all<any>();
+            rShops = res.results || [];
+          } catch {}
+          try {
+            const res = await env.DB.prepare(
+              `SELECT p.*, s.name_bn as shop_name, s.area as shop_area
+               FROM products p
+               LEFT JOIN shops s ON p.shop_id = s.id
+               ORDER BY p.created_at DESC`
+            ).all<any>();
+            rProds = res.results || [];
+          } catch {}
+          try {
+            const res = await env.DB.prepare(
+              'SELECT id, name, phone, role, created_at FROM users ORDER BY created_at DESC'
+            ).all<any>();
+            rUsers = res.results || [];
+          } catch {}
+          try {
+            const res = await env.DB.prepare(
+              `SELECT r.*, s.name_bn as shop_name
+               FROM reviews r
+               LEFT JOIN shops s ON r.shop_id = s.id
+               ORDER BY r.created_at DESC`
+            ).all<any>();
+            rReviews = res.results || [];
+          } catch {}
+
+          const shops = rShops.map((row: any) => ({
             id: row.id,
             nameBn: row.name_bn,
             categoryId: row.category_id,
@@ -1055,13 +1144,7 @@ export default {
             createdAt: row.created_at || '',
           }));
 
-          const { results: rProds } = await env.DB.prepare(
-            `SELECT p.*, s.name_bn as shop_name, s.area as shop_area
-             FROM products p
-             LEFT JOIN shops s ON p.shop_id = s.id
-             ORDER BY p.created_at DESC`
-          ).all<any>();
-          const products = (rProds || []).map((row: any) => ({
+          const products = rProds.map((row: any) => ({
             id: row.id,
             shopId: row.shop_id,
             nameBn: row.name_bn,
@@ -1076,10 +1159,7 @@ export default {
             shopArea: row.shop_area || '',
           }));
 
-          const { results: rUsers } = await env.DB.prepare(
-            'SELECT id, name, phone, role, created_at FROM users ORDER BY created_at DESC'
-          ).all<any>();
-          const users = (rUsers || []).map((u: any) => ({
+          const users = rUsers.map((u: any) => ({
             id: u.id,
             name: u.name,
             phone: u.phone,
@@ -1087,13 +1167,7 @@ export default {
             createdAt: u.created_at || '',
           }));
 
-          const { results: rReviews } = await env.DB.prepare(
-            `SELECT r.*, s.name_bn as shop_name
-             FROM reviews r
-             LEFT JOIN shops s ON r.shop_id = s.id
-             ORDER BY r.created_at DESC`
-          ).all<any>();
-          const reviews = (rReviews || []).map((r: any) => ({
+          const reviews = rReviews.map((r: any) => ({
             id: r.id,
             shopId: r.shop_id,
             shopName: r.shop_name || '',

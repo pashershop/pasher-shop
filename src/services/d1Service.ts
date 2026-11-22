@@ -606,6 +606,16 @@ export interface AdminOverviewData {
 
 const ADMIN_TOKEN_KEY = 'pasher_admin_token';
 
+async function parseAdminJson(res: Response): Promise<{ ok: boolean; json: any; rawText: string }> {
+  const rawText = await res.text();
+  if (!rawText) return { ok: res.ok, json: null, rawText: '' };
+  try {
+    return { ok: res.ok, json: JSON.parse(rawText), rawText };
+  } catch {
+    return { ok: false, json: null, rawText };
+  }
+}
+
 export const adminService = {
   getToken(): string | null {
     try {
@@ -628,23 +638,49 @@ export const adminService = {
   },
 
   async getStatus(): Promise<{
+    apiAvailable: boolean;
     passwordConfigured: boolean;
     authenticated: boolean;
     admin: AdminProfile | null;
+    error?: string;
   }> {
     const token = this.getToken();
-    const res = await fetch('/api/admin/status', {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    });
-    const data = await res.json();
-    if (!data.authenticated && token) {
-      this.clearToken();
+    try {
+      const res = await fetch('/api/admin/status', {
+        credentials: 'same-origin',
+        headers: {
+          Accept: 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+      const { json } = await parseAdminJson(res);
+      if (!json || typeof json.success !== 'boolean') {
+        return {
+          apiAvailable: false,
+          passwordConfigured: false,
+          authenticated: false,
+          admin: null,
+          error: `অ্যাডমিন API (/api/admin/status) পাওয়া যায়নি (HTTP ${res.status})। Cloudflare Worker ডিপ্লয়মেন্ট (` + '`npm run deploy`' + `) পরীক্ষা করুন।`,
+        };
+      }
+      if (!json.authenticated && token) {
+        this.clearToken();
+      }
+      return {
+        apiAvailable: true,
+        passwordConfigured: Boolean(json.passwordConfigured),
+        authenticated: Boolean(json.authenticated),
+        admin: json.admin || null,
+      };
+    } catch {
+      return {
+        apiAvailable: false,
+        passwordConfigured: false,
+        authenticated: false,
+        admin: null,
+        error: 'সার্ভারের সাথে সংযোগ স্থাপন করা যায়নি। ইন্টারনেট সংযোগ পরীক্ষা করুন।',
+      };
     }
-    return {
-      passwordConfigured: Boolean(data.passwordConfigured),
-      authenticated: Boolean(data.authenticated),
-      admin: data.admin || null,
-    };
   },
 
   async loginAdmin(
@@ -653,17 +689,41 @@ export const adminService = {
     try {
       const res = await fetch('/api/admin/login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
         body: JSON.stringify({ password }),
       });
-      const data = await res.json();
-      if (res.ok && data.success && data.token) {
-        this.setToken(data.token);
-        return { success: true, admin: data.admin };
+
+      const { json, rawText } = await parseAdminJson(res);
+
+      if (res.ok && json?.success && json?.token) {
+        this.setToken(json.token);
+        return { success: true, admin: json.admin };
       }
-      return { success: false, error: data.error || 'অ্যাডমিন পাসওয়ার্ড সঠিক নয়' };
+
+      if (json?.error) {
+        return { success: false, error: json.error };
+      }
+
+      if (res.status === 404 || res.status === 405 || (rawText && !json)) {
+        return {
+          success: false,
+          error: `অ্যাডমিন API (/api/admin/login) পাওয়া যায়নি (HTTP ${res.status})। Cloudflare Worker (npm run deploy) সঠিকভাবে ডিপ্লয় হয়েছে কিনা নিশ্চিত করুন।`,
+        };
+      }
+
+      return {
+        success: false,
+        error: `অ্যাডমিন লগইন ব্যর্থ হয়েছে (HTTP ${res.status})`,
+      };
     } catch {
-      return { success: false, error: 'সার্ভারের সাথে সংযোগ ব্যর্থ হয়েছে' };
+      return {
+        success: false,
+        error: 'সার্ভারের সাথে নেটওয়ার্ক সংযোগ স্থাপন করা যায়নি। আপনার ইন্টারনেট বা সার্ভার চালু আছে কিনা দেখুন।',
+      };
     }
   },
 
@@ -674,6 +734,7 @@ export const adminService = {
       try {
         await fetch('/api/admin/logout', {
           method: 'POST',
+          credentials: 'same-origin',
           headers: { Authorization: `Bearer ${token}` },
         });
       } catch {}
@@ -685,101 +746,143 @@ export const adminService = {
     if (!token) return { success: false, error: 'অননুমোদিত প্রবেশাধিকার' };
     try {
       const res = await fetch('/api/admin/overview', {
-        headers: { Authorization: `Bearer ${token}` },
+        credentials: 'same-origin',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: 'application/json',
+        },
       });
-      const json = await res.json();
-      if (res.ok && json.success) {
+      const { json } = await parseAdminJson(res);
+      if (res.ok && json?.success) {
         return { success: true, data: json };
       }
       if (res.status === 401) {
         this.clearToken();
       }
-      return { success: false, error: json.error || 'তথ্য লোড করা যায়নি' };
+      return {
+        success: false,
+        error: json?.error || `অ্যাডমিন ডেটা লোড করা যায়নি (HTTP ${res.status})`,
+      };
     } catch {
-      return { success: false, error: 'সার্ভারের সাথে সংযোগ ব্যর্থ হয়েছে' };
+      return { success: false, error: 'সার্ভারের সাথে নেটওয়ার্ক সংযোগ স্থাপন করা যায়নি' };
     }
   },
 
   async updateShop(id: string, body: Partial<Shop>): Promise<boolean> {
     const token = this.getToken();
     if (!token) return false;
-    const res = await fetch(`/api/admin/shops/${id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(body),
-    });
-    return res.ok;
+    try {
+      const res = await fetch(`/api/admin/shops/${id}`, {
+        method: 'PUT',
+        credentials: 'same-origin',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(body),
+      });
+      return res.ok;
+    } catch {
+      return false;
+    }
   },
 
   async deleteShop(id: string): Promise<boolean> {
     const token = this.getToken();
     if (!token) return false;
-    const res = await fetch(`/api/admin/shops/${id}`, {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    return res.ok;
+    try {
+      const res = await fetch(`/api/admin/shops/${id}`, {
+        method: 'DELETE',
+        credentials: 'same-origin',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return res.ok;
+    } catch {
+      return false;
+    }
   },
 
   async updateProduct(id: string, body: Partial<ProductItem>): Promise<boolean> {
     const token = this.getToken();
     if (!token) return false;
-    const res = await fetch(`/api/admin/products/${id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(body),
-    });
-    return res.ok;
+    try {
+      const res = await fetch(`/api/admin/products/${id}`, {
+        method: 'PUT',
+        credentials: 'same-origin',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(body),
+      });
+      return res.ok;
+    } catch {
+      return false;
+    }
   },
 
   async deleteProduct(id: string): Promise<boolean> {
     const token = this.getToken();
     if (!token) return false;
-    const res = await fetch(`/api/admin/products/${id}`, {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    return res.ok;
+    try {
+      const res = await fetch(`/api/admin/products/${id}`, {
+        method: 'DELETE',
+        credentials: 'same-origin',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return res.ok;
+    } catch {
+      return false;
+    }
   },
 
   async updateUserRole(id: string, role: 'customer' | 'merchant'): Promise<boolean> {
     const token = this.getToken();
     if (!token) return false;
-    const res = await fetch(`/api/admin/users/${id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ role }),
-    });
-    return res.ok;
+    try {
+      const res = await fetch(`/api/admin/users/${id}`, {
+        method: 'PUT',
+        credentials: 'same-origin',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ role }),
+      });
+      return res.ok;
+    } catch {
+      return false;
+    }
   },
 
   async deleteUser(id: string): Promise<boolean> {
     const token = this.getToken();
     if (!token) return false;
-    const res = await fetch(`/api/admin/users/${id}`, {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    return res.ok;
+    try {
+      const res = await fetch(`/api/admin/users/${id}`, {
+        method: 'DELETE',
+        credentials: 'same-origin',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return res.ok;
+    } catch {
+      return false;
+    }
   },
 
   async deleteReview(shopId: string, reviewId: string): Promise<boolean> {
     const token = this.getToken();
     if (!token) return false;
-    const res = await fetch(`/api/admin/reviews/${shopId}/${reviewId}`, {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    return res.ok;
+    try {
+      const res = await fetch(`/api/admin/reviews/${shopId}/${reviewId}`, {
+        method: 'DELETE',
+        credentials: 'same-origin',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return res.ok;
+    } catch {
+      return false;
+    }
   },
 };
 

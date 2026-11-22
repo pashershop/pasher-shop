@@ -35,6 +35,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
   onDataChanged,
 }) => {
   const [checkingAuth, setCheckingAuth] = useState(true);
+  const [apiAvailable, setApiAvailable] = useState(true);
   const [passwordConfigured, setPasswordConfigured] = useState(true);
   const [authenticated, setAuthenticated] = useState(false);
   const [adminProfile, setAdminProfile] = useState<AdminProfile | null>(null);
@@ -87,9 +88,13 @@ export const AdminPage: React.FC<AdminPageProps> = ({
       .getStatus()
       .then((status) => {
         if (!mounted) return;
+        setApiAvailable(status.apiAvailable);
         setPasswordConfigured(status.passwordConfigured);
         setAuthenticated(status.authenticated);
         setAdminProfile(status.admin);
+        if (status.error) {
+          setAuthError(status.error);
+        }
         setCheckingAuth(false);
         if (status.authenticated) {
           loadOverview();
@@ -97,6 +102,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
       })
       .catch(() => {
         if (!mounted) return;
+        setApiAvailable(false);
         setCheckingAuth(false);
       });
     return () => {
@@ -312,7 +318,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
             ওয়েবসাইটের দোকান, পণ্য, ব্যবহারকারী ও রিভিউ পরিচালনা করতে আপনার নির্ধারিত অ্যাডমিন পাসওয়ার্ড (<code className="font-mono text-xs bg-slate-100 px-1.5 py-0.5 rounded">ADMIN_PASSWORD</code>) দিন।
           </p>
 
-          {!passwordConfigured && (
+          {apiAvailable && !passwordConfigured && (
             <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3.5 py-2.5 text-xs text-amber-800 leading-relaxed">
               <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
               <span>
