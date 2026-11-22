@@ -20,6 +20,8 @@ import {
 } from '../utils/geoUtils';
 import { ShopRouteMap } from './ShopRouteMap';
 
+import { d1Service } from '../services/d1Service';
+
 interface ShopModalProps {
   shop: Shop | null;
   userCoordinates?: { lat: number; lng: number } | null;
@@ -43,40 +45,36 @@ export const ShopModal: React.FC<ShopModalProps> = ({
   onDetectLocation,
   onClose,
 }) => {
-  if (!shop) return null;
-
-  // Rating & Review Form State
+  // Rating & Review Form State (Hooks must be called unconditionally before early return)
   const [selectedStars, setSelectedStars] = useState<number>(5);
   const [hoverStars, setHoverStars] = useState<number>(0);
   const [reviewerName, setReviewerName] = useState<string>('');
   const [reviewerComment, setReviewerComment] = useState<string>('');
+  const [reviewError, setReviewError] = useState<string>('');
   const [isSubmitted, setIsSubmitted] = useState<boolean>(false);
+  const [reviewsList, setReviewsList] = useState<CustomerReview[]>([]);
 
-  // Reviews List for this shop
-  const [reviewsList, setReviewsList] = useState<CustomerReview[]>(() => {
+  useEffect(() => {
+    if (!shop?.id) {
+      setReviewsList([]);
+      return;
+    }
+    setReviewError('');
+    setIsSubmitted(false);
     try {
       const saved = localStorage.getItem(`pasher_reviews_${shop.id}`);
-      if (saved) return JSON.parse(saved);
-    } catch (e) {}
+      setReviewsList(saved ? JSON.parse(saved) : []);
+    } catch {
+      setReviewsList([]);
+    }
+    d1Service.getReviews(shop.id).then((d1Reviews) => {
+      if (Array.isArray(d1Reviews) && d1Reviews.length > 0) {
+        setReviewsList(d1Reviews);
+      }
+    });
+  }, [shop?.id]);
 
-    // Default sample reviews
-    return [
-      {
-        id: 'r1',
-        customerName: 'তানভীর আহমেদ',
-        rating: 5,
-        comment: 'দোকানদারের ব্যবহার খুব ভালো এবং প্রতিটি পণ্যের দাম সঠিক ছিল। চমৎকার সার্ভিস!',
-        dateBn: '২ দিন আগে',
-      },
-      {
-        id: 'r2',
-        customerName: 'সাদিয়া তাসনিম',
-        rating: 5,
-        comment: 'ফোন দেওয়ার ১০ মিনিটের মধ্যে ডেলিভারি পেয়েছি। খুব নির্ভরযোগ্য শপ।',
-        dateBn: '১ সপ্তাহ আগে',
-      },
-    ];
-  });
+  if (!shop) return null;
 
   // Calculate live distance
   const hasUserCoords = !!userCoordinates;
@@ -93,13 +91,14 @@ export const ShopModal: React.FC<ShopModalProps> = ({
   const handleSubmitReview = (e: React.FormEvent) => {
     e.preventDefault();
     if (!reviewerComment.trim()) {
-      alert('অনুগ্রহ করে রিভিউ বা মন্তব্য লিখুন।');
+      setReviewError('অনুগ্রহ করে রিভিউ বা মন্তব্য লিখুন।');
       return;
     }
+    setReviewError('');
 
     const newRev: CustomerReview = {
       id: `rev_${Date.now()}`,
-      customerName: reviewerName.trim() || 'সাধারণ ক্রেতা',
+      customerName: reviewerName.trim() || 'সম্মানিত ক্রেতা',
       rating: selectedStars,
       comment: reviewerComment.trim(),
       dateBn: 'এইমাত্র',
@@ -110,9 +109,11 @@ export const ShopModal: React.FC<ShopModalProps> = ({
     try {
       localStorage.setItem(`pasher_reviews_${shop.id}`, JSON.stringify(updated));
     } catch (err) {}
+    d1Service.submitReview(shop.id, newRev);
 
     setIsSubmitted(true);
     setReviewerComment('');
+    setReviewerName('');
     setTimeout(() => setIsSubmitted(false), 4000);
   };
 
@@ -268,7 +269,12 @@ export const ShopModal: React.FC<ShopModalProps> = ({
               </span>
             </div>
 
-            {/* Success Message Banner */}
+            {/* Error / Success Message Banners */}
+            {reviewError && (
+              <div className="p-3 rounded-xl bg-rose-50 text-rose-800 border border-rose-200 text-xs font-bold animate-in fade-in">
+                {reviewError}
+              </div>
+            )}
             {isSubmitted && (
               <div className="p-3 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-bold flex items-center gap-2 animate-in fade-in">
                 <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />

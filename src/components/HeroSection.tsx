@@ -47,10 +47,10 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
   return (
     <section
       id="hero"
-      className="relative pt-8 pb-14 sm:pt-12 sm:pb-18 lg:pt-16 lg:pb-22 bg-gradient-to-b from-[#DCEBFF]/45 via-[#EFF6FF]/35 to-white/40 border-b border-[#0B4A8A]/10 transition-colors"
+      className="relative overflow-hidden pt-8 pb-14 sm:pt-12 sm:pb-18 lg:pt-16 lg:pb-22 bg-gradient-to-b from-[#DCEBFF]/45 via-[#EFF6FF]/35 to-white/40 border-b border-[#0B4A8A]/10 transition-colors"
     >
       {/* Background Ambient Gradient Glow */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[28rem] h-[28rem] bg-gradient-to-tr from-[#0B4A8A]/15 via-[#1262B5]/10 to-[#FF7900]/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-72 h-72 sm:w-[28rem] sm:h-[28rem] bg-gradient-to-tr from-[#0B4A8A]/15 via-[#1262B5]/10 to-[#FF7900]/10 rounded-full blur-3xl pointer-events-none" />
 
       <div className="w-full px-4 sm:px-6 lg:px-8 relative z-10">
         
@@ -234,17 +234,17 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               </div>
 
               {/* Floating Interactive Card bottom */}
-              <div className="absolute bottom-4 left-4 right-4 bg-white/95 backdrop-blur-md p-3 rounded-xl border border-white/60 shadow-md flex items-center justify-between">
-                <div>
+              <div className="absolute bottom-3 sm:bottom-4 left-3 right-3 sm:left-4 sm:right-4 bg-white/95 backdrop-blur-md p-2.5 sm:p-3 rounded-xl border border-white/60 shadow-md flex items-center justify-between gap-2">
+                <div className="min-w-0 flex-1">
                   <div className="text-[11px] font-semibold text-slate-500">আপনার বর্তমান এলাকা</div>
-                  <div className="text-sm font-extrabold text-[#171717] flex items-center gap-1.5">
-                    <MapPin className="w-3.5 h-3.5 text-[#0B4A8A]" />
-                    <span>{currentArea}</span>
+                  <div className="text-xs sm:text-sm font-extrabold text-[#171717] flex items-center gap-1.5 min-w-0">
+                    <MapPin className="w-3.5 h-3.5 text-[#0B4A8A] shrink-0" />
+                    <span className="truncate">{currentArea}</span>
                   </div>
                 </div>
                 <button
                   onClick={onExploreShops}
-                  className="px-3.5 py-1.5 text-xs font-bold text-white bg-[#0B4A8A] hover:bg-[#093a6d] rounded-lg transition-colors cursor-pointer"
+                  className="px-3 sm:px-3.5 py-1.5 text-xs font-bold text-white bg-[#0B4A8A] hover:bg-[#093a6d] rounded-lg transition-colors cursor-pointer shrink-0"
                 >
                   দোকানসমূহ দেখুন
                 </button>

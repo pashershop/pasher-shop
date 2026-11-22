@@ -37,6 +37,7 @@ import { d1Service } from '../services/d1Service';
 interface ShopkeeperDashboardProps {
   shop: Shop | null;
   onUpdateShop: (updatedShop: Shop) => void;
+  onProductsChanged?: () => void;
   onOpenCustomerPreview: (shop: Shop) => void;
   onBackToHome: () => void;
   onOpenAddShop: () => void;
@@ -77,13 +78,14 @@ const INITIAL_INQUIRIES: ShopInquiry[] = [];
 export const ShopkeeperDashboard: React.FC<ShopkeeperDashboardProps> = ({
   shop,
   onUpdateShop,
+  onProductsChanged,
   onOpenCustomerPreview,
   onBackToHome,
   onOpenAddShop,
 }) => {
   const [activeTab, setActiveTab] = useState<'products' | 'orders' | 'settings' | 'reviews'>('products');
   
-  // Local products state initialized from shop.featuredProducts
+  // Local products state initialized from shop.featuredProducts and hydrated from D1
   const [products, setProducts] = useState<
     { id: string; nameBn: string; price: number; unit: string; inStock: boolean }[]
   >(
@@ -115,6 +117,31 @@ export const ShopkeeperDashboard: React.FC<ShopkeeperDashboardProps> = ({
   const [settingsMinOrder, setSettingsMinOrder] = useState(shop?.minOrder?.toString() || '৩০০');
   const [settingsBanner, setSettingsBanner] = useState(shop?.bannerImage || shop?.coverImage || DASHBOARD_BANNER_PRESETS[0].url);
   const [showSaveToast, setShowSaveToast] = useState(false);
+
+  React.useEffect(() => {
+    if (!shop?.id) return;
+    setSettingsShopName(shop.nameBn || '');
+    setSettingsPhone(shop.phone || '');
+    setSettingsAddress(shop.addressBn || '');
+    setSettingsTiming(shop.timingBn || 'সকাল ৮:০০ - রাত ১১:০০');
+    setSettingsDelivery(shop.deliveryAvailable ?? true);
+    setSettingsMinOrder(shop.minOrder?.toString() || '0');
+    setSettingsBanner(shop.bannerImage || shop.coverImage || DASHBOARD_BANNER_PRESETS[0].url);
+
+    d1Service.getAllProducts({ shopId: shop.id }).then((d1Products) => {
+      if (Array.isArray(d1Products) && d1Products.length > 0) {
+        setProducts(
+          d1Products.map((p) => ({
+            id: p.id,
+            nameBn: p.nameBn,
+            price: p.price,
+            unit: p.unit || 'কেজি',
+            inStock: p.inStock !== false && p.isAvailable !== false,
+          }))
+        );
+      }
+    });
+  }, [shop?.id]);
 
   // If the user has no shop added yet -> Access Gate view!
   if (!shop) {
@@ -189,17 +216,23 @@ export const ShopkeeperDashboard: React.FC<ShopkeeperDashboardProps> = ({
     onUpdateShop({ ...shop, featuredProducts: updatedFeatured });
 
     // Persist to Cloudflare D1 SQL (DB: pasher-shop-db)
-    d1Service.createProduct({
-      id: newProd.id,
-      shopId: shop.id,
-      nameBn: newProd.nameBn,
-      price: newProd.price,
-      unit: newProd.unit,
-      inStock: newProd.inStock,
-      category: shop.categoryId,
-      shopName: shop.nameBn,
-      shopArea: shop.area,
-    });
+    d1Service
+      .createProduct({
+        id: newProd.id,
+        shopId: shop.id,
+        nameBn: newProd.nameBn,
+        price: newProd.price,
+        unit: newProd.unit,
+        inStock: newProd.inStock,
+        imageUrl: shop.coverImage || '',
+        category: shop.categoryId,
+        shopName: shop.nameBn,
+        shopArea: shop.area,
+        shopPhone: shop.phone,
+        isAvailable: newProd.inStock,
+        stockStatus: newProd.inStock ? 'ইন স্টক' : 'স্টক শেষ',
+      })
+      .then(() => onProductsChanged?.());
 
     // Reset Form
     setNewProductName('');
@@ -220,7 +253,7 @@ export const ShopkeeperDashboard: React.FC<ShopkeeperDashboardProps> = ({
     onUpdateShop({ ...shop, featuredProducts: updatedFeatured });
 
     // Delete in Cloudflare D1 SQL (DB: pasher-shop-db)
-    d1Service.deleteProduct(productId);
+    d1Service.deleteProduct(productId).then(() => onProductsChanged?.());
   };
 
   // Toggle Product Stock
@@ -232,7 +265,13 @@ export const ShopkeeperDashboard: React.FC<ShopkeeperDashboardProps> = ({
 
     const target = nextProducts.find((p) => p.id === productId);
     if (target) {
-      d1Service.updateProduct(productId, { inStock: target.inStock });
+      d1Service
+        .updateProduct(productId, {
+          inStock: target.inStock,
+          isAvailable: target.inStock,
+          stockStatus: target.inStock ? 'ইন স্টক' : 'স্টক শেষ',
+        })
+        .then(() => onProductsChanged?.());
     }
   };
 
@@ -262,47 +301,47 @@ export const ShopkeeperDashboard: React.FC<ShopkeeperDashboardProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-transparent text-slate-900 pb-20 transition-colors">
+    <div className="min-h-screen w-full overflow-x-hidden bg-transparent text-slate-900 pb-20 transition-colors">
       
       {/* 1. Top Navigation Bar */}
-      <div className="w-full px-4 sm:px-6 lg:px-8 pt-4">
-        <div className="bg-gradient-to-r from-[#073463] via-[#0B4A8A] to-[#1262B5] text-white rounded-3xl px-4 sm:px-6 border border-white/15 shadow-md">
-          <div className="flex items-center justify-between h-16 sm:h-20 gap-4">
-            <div className="flex items-center gap-3">
+      <div className="w-full px-3 sm:px-6 lg:px-8 pt-4">
+        <div className="bg-gradient-to-r from-[#073463] via-[#0B4A8A] to-[#1262B5] text-white rounded-3xl px-3 sm:px-6 border border-white/15 shadow-md">
+          <div className="flex items-center justify-between h-16 sm:h-20 gap-2 sm:gap-4 min-w-0">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
               <button
                 onClick={onBackToHome}
-                className="p-2 rounded-full text-white/90 hover:text-white hover:bg-white/15 transition-colors flex items-center gap-1.5 text-xs sm:text-sm font-bold cursor-pointer"
+                className="p-2 rounded-full text-white/90 hover:text-white hover:bg-white/15 transition-colors flex items-center gap-1.5 text-xs sm:text-sm font-bold cursor-pointer shrink-0"
                 title="মূল ওয়েবসাইটে ফিরুন"
               >
                 <ArrowLeft className="w-4 h-4" />
                 <span className="hidden sm:inline">হোমে ফিরুন</span>
               </button>
 
-              <div className="h-6 w-px bg-white/20 hidden sm:block" />
+              <div className="h-6 w-px bg-white/20 hidden sm:block shrink-0" />
 
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-white/15 text-white border border-white/20 flex items-center justify-center font-bold text-xs shadow-xs">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="w-8 h-8 rounded-full bg-white/15 text-white border border-white/20 flex items-center justify-center font-bold text-xs shadow-xs shrink-0">
                   <Store className="w-4 h-4 text-[#FF7900]" />
                 </div>
-                <div>
-                  <h1 className="text-sm sm:text-base font-black text-white leading-tight truncate max-w-[180px] sm:max-w-xs">
+                <div className="min-w-0">
+                  <h1 className="text-xs sm:text-base font-black text-white leading-tight truncate max-w-[120px] sm:max-w-xs">
                     {shop.nameBn}
                   </h1>
-                  <span className="text-[11px] text-blue-100 flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                    দোকানদার কন্ট্রোল ড্যাশবোর্ড
+                  <span className="text-[10px] sm:text-[11px] text-blue-100 flex items-center gap-1 truncate">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                    <span className="truncate">দোকানদার ড্যাশবোর্ড</span>
                   </span>
                 </div>
               </div>
             </div>
 
             {/* Quick Actions & Shop Open/Close toggle */}
-            <div className="flex items-center gap-2 sm:gap-3">
+            <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
               {/* Live Status Switch */}
               <button
                 type="button"
                 onClick={handleToggleShopOpen}
-                className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs font-black transition-all flex items-center gap-2 cursor-pointer shadow-xs border ${
+                className={`px-2.5 py-1.5 sm:px-4 sm:py-2 rounded-full text-[11px] sm:text-xs font-black transition-all flex items-center gap-1.5 sm:gap-2 cursor-pointer shadow-xs border ${
                   shop.isOpen
                     ? 'bg-emerald-500/20 text-emerald-100 border-emerald-300/40 hover:bg-emerald-500/30'
                     : 'bg-red-500/25 text-red-100 border-red-300/40 hover:bg-red-500/35'
@@ -310,19 +349,19 @@ export const ShopkeeperDashboard: React.FC<ShopkeeperDashboardProps> = ({
                 title="দোকান খোলা বা বন্ধ করার সুইচ"
               >
                 <span
-                  className={`w-2.5 h-2.5 rounded-full ${
+                  className={`w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full shrink-0 ${
                     shop.isOpen ? 'bg-emerald-400 animate-pulse' : 'bg-red-400'
                   }`}
                 />
                 <span className="hidden sm:inline">দোকানের অবস্থা:</span>
-                <span>{shop.isOpen ? 'খোলা আছে' : 'বর্তমানে বন্ধ'}</span>
+                <span>{shop.isOpen ? 'খোলা' : 'বন্ধ'}</span>
               </button>
 
               {/* View as customer */}
               <button
                 type="button"
                 onClick={() => onOpenCustomerPreview(shop)}
-                className="px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-full text-xs font-bold text-white bg-white/15 hover:bg-white/25 border border-white/20 transition-all flex items-center gap-1.5 cursor-pointer"
+                className="p-2 sm:px-3.5 sm:py-2 rounded-full text-xs font-bold text-white bg-white/15 hover:bg-white/25 border border-white/20 transition-all flex items-center gap-1.5 cursor-pointer"
                 title="গ্রাহকরা আপনার দোকান যেভাবে দেখতে পান"
               >
                 <Eye className="w-3.5 h-3.5 text-[#FF7900]" />
@@ -333,7 +372,7 @@ export const ShopkeeperDashboard: React.FC<ShopkeeperDashboardProps> = ({
         </div>
       </div>
 
-      <div className="w-full px-4 sm:px-6 lg:px-8 pt-6 space-y-6">
+      <div className="w-full px-3 sm:px-6 lg:px-8 pt-6 space-y-6">
         
         {/* 2. Hero Shop Identity Card with Banner (Full Width) */}
         <div className="w-full relative rounded-3xl overflow-hidden bg-slate-900 border border-slate-200 shadow-md">
@@ -357,14 +396,14 @@ export const ShopkeeperDashboard: React.FC<ShopkeeperDashboardProps> = ({
                   </span>
                 </div>
                 <h2 className="text-xl sm:text-2xl font-black text-white">{shop.nameBn}</h2>
-                <div className="flex items-center gap-3 text-xs text-slate-300 mt-1">
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-300 mt-1">
                   <span className="flex items-center gap-1">
-                    <MapPin className="w-3 h-3 text-[#FF7900]" />
+                    <MapPin className="w-3 h-3 text-[#FF7900] shrink-0" />
                     {shop.addressBn}
                   </span>
                   <span>·</span>
                   <span className="flex items-center gap-1">
-                    <Phone className="w-3 h-3 text-emerald-400" />
+                    <Phone className="w-3 h-3 text-emerald-400 shrink-0" />
                     {shop.phone}
                   </span>
                 </div>
@@ -558,7 +597,7 @@ export const ShopkeeperDashboard: React.FC<ShopkeeperDashboardProps> = ({
                         </div>
                       </div>
 
-                      <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4 border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-100">
+                      <div className="flex flex-wrap items-center justify-between sm:justify-end gap-2 sm:gap-4 border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-100">
                         <div className="text-left sm:text-right">
                           <div className="text-[10px] text-slate-400 font-medium">নির্ধারিত দাম</div>
                           <div className="text-base font-black text-[#0B4A8A]">

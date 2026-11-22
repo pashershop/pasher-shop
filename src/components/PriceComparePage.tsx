@@ -31,13 +31,13 @@ export const PriceComparePage: React.FC<PriceComparePageProps> = ({
   });
 
   return (
-    <div className="min-h-screen bg-transparent text-slate-900 pb-28 pt-4 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen w-full overflow-x-hidden bg-transparent text-slate-900 pb-28 pt-4 px-3 sm:px-6 lg:px-8">
       <div className="w-full space-y-6">
         
         {/* Title Banner matching Header Gradient */}
-        <div className="bg-gradient-to-r from-[#073463] via-[#0B4A8A] to-[#1262B5] text-white rounded-3xl p-5 sm:p-6 shadow-md border border-white/15">
+        <div className="bg-gradient-to-r from-[#073463] via-[#0B4A8A] to-[#1262B5] text-white rounded-3xl p-4 sm:p-6 shadow-md border border-white/15">
           <h1 className="text-xl sm:text-2xl font-black text-white flex items-center gap-2">
-            <Scale className="w-5 h-5 text-[#FF7900]" />
+            <Scale className="w-5 h-5 text-[#FF7900] shrink-0" />
             <span>আপনার এলাকার দোকানগুলোর দাম তুলনা</span>
           </h1>
           <p className="text-xs text-blue-100 mt-1">
@@ -126,11 +126,11 @@ export const PriceComparePage: React.FC<PriceComparePageProps> = ({
                           : 'bg-slate-50 border-slate-200'
                       }`}
                     >
-                      <div className="space-y-1.5">
-                        <div className="flex items-center justify-between">
+                      <div className="space-y-1.5 min-w-0">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
                           <button
                             onClick={() => onOpenShopByName(s.shopName)}
-                            className="font-bold text-slate-900 text-sm hover:text-[#0B4A8A] hover:underline text-left line-clamp-1 cursor-pointer"
+                            className="font-bold text-slate-900 text-sm hover:text-[#0B4A8A] hover:underline text-left line-clamp-1 cursor-pointer min-w-0"
                           >
                             {s.shopName}
                           </button>
@@ -142,12 +142,12 @@ export const PriceComparePage: React.FC<PriceComparePageProps> = ({
                         </div>
 
                         <div className="flex items-center gap-2 text-xs text-slate-500">
-                          <MapPin className="w-3 h-3 text-[#FF7900]" />
+                          <MapPin className="w-3 h-3 text-[#FF7900] shrink-0" />
                           <span>{s.shopArea} ({s.distance})</span>
                         </div>
                       </div>
 
-                      <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between">
+                      <div className="pt-2 border-t border-slate-200/60 flex flex-wrap items-center justify-between gap-2">
                         <div>
                           <div className="text-xs text-slate-400">বিক্রয় মূল্য</div>
                           <div
@@ -161,13 +161,24 @@ export const PriceComparePage: React.FC<PriceComparePageProps> = ({
                           </div>
                         </div>
 
-                        <a
-                          href={`tel:01711223344`}
-                          className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1 shadow-md shadow-emerald-900/20 transition-all cursor-pointer"
-                        >
-                          <Phone className="w-3.5 h-3.5" />
-                          <span>কল করুন</span>
-                        </a>
+                        {s.shopPhone ? (
+                          <a
+                            href={`tel:${s.shopPhone.replace(/[^0-9+]/g, '')}`}
+                            className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1 shadow-md shadow-emerald-900/20 transition-all cursor-pointer"
+                          >
+                            <Phone className="w-3.5 h-3.5" />
+                            <span>কল করুন</span>
+                          </a>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => onOpenShopByName(s.shopName)}
+                            className="px-3.5 py-2 rounded-xl bg-[#0B4A8A] hover:bg-[#093a6d] text-white text-xs font-bold flex items-center gap-1 shadow-md transition-all cursor-pointer"
+                          >
+                            <Store className="w-3.5 h-3.5" />
+                            <span>দোকান দেখুন</span>
+                          </button>
+                        )}
                       </div>
                     </div>
                   ))}

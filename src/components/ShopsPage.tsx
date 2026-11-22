@@ -52,14 +52,14 @@ export const ShopsPage: React.FC<ShopsPageProps> = ({
   });
 
   return (
-    <div className="min-h-screen bg-transparent text-slate-900 pb-28 pt-4 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen w-full overflow-x-hidden bg-transparent text-slate-900 pb-28 pt-4 px-3 sm:px-6 lg:px-8">
       <div className="w-full space-y-6">
         
         {/* Page Title Banner matching Header Gradient */}
-        <div className="flex flex-wrap items-center justify-between gap-3 bg-gradient-to-r from-[#073463] via-[#0B4A8A] to-[#1262B5] text-white rounded-3xl p-5 sm:p-6 shadow-md border border-white/15">
-          <div>
+        <div className="flex flex-wrap items-center justify-between gap-3 bg-gradient-to-r from-[#073463] via-[#0B4A8A] to-[#1262B5] text-white rounded-3xl p-4 sm:p-6 shadow-md border border-white/15">
+          <div className="min-w-0">
             <h1 className="text-xl sm:text-2xl font-black text-white flex items-center gap-2">
-              <Store className="w-5 h-5 text-[#FF7900]" />
+              <Store className="w-5 h-5 text-[#FF7900] shrink-0" />
               <span>আপনার আশেপাশের দোকানসমূহ</span>
             </h1>
             <p className="text-xs text-blue-100 mt-1">
@@ -68,7 +68,7 @@ export const ShopsPage: React.FC<ShopsPageProps> = ({
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={onDetectLocation}
               className="px-3 py-1.5 rounded-full bg-white/15 hover:bg-white/25 text-white border border-white/20 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
@@ -252,10 +252,10 @@ export const ShopsPage: React.FC<ShopsPageProps> = ({
                   </div>
 
                   {/* Content */}
-                  <div className="p-5 sm:p-6 flex-1 flex flex-col justify-between space-y-3">
-                    <div>
-                      <div className="flex items-center justify-between gap-2 mb-2">
-                        <div className="flex items-center gap-1.5 text-xs text-slate-600">
+                  <div className="p-4 sm:p-6 flex-1 min-w-0 flex flex-col justify-between space-y-3">
+                    <div className="min-w-0">
+                      <div className="flex items-center justify-between gap-2 mb-2 min-w-0">
+                        <div className="flex items-center gap-1.5 text-xs text-slate-600 min-w-0">
                           <MapPin className="w-4 h-4 text-[#FF7900] shrink-0" />
                           <span className="line-clamp-1 font-semibold">{shop.addressBn}</span>
                         </div>
@@ -287,17 +287,17 @@ export const ShopsPage: React.FC<ShopsPageProps> = ({
                     </div>
 
                     {/* Actions */}
-                    <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-3">
+                    <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3">
                       <span className="text-xs font-bold text-[#FF7900] group-hover:underline flex items-center gap-1">
                         দোকান ও রুট ম্যাপ দেখুন
                         <ChevronRight className="w-4 h-4" />
                       </span>
 
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 w-full sm:w-auto">
                         <a
                           href={`tel:${shop.phone}`}
                           onClick={(e) => e.stopPropagation()}
-                          className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-sm"
+                          className="flex-1 sm:flex-initial justify-center px-3.5 sm:px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-sm"
                         >
                           <Phone className="w-3.5 h-3.5" />
                           <span>কল দিন</span>
@@ -308,7 +308,7 @@ export const ShopsPage: React.FC<ShopsPageProps> = ({
                             e.stopPropagation();
                             onSelectShop(shop);
                           }}
-                          className="px-4 py-2 rounded-xl bg-[#0B4A8A] hover:bg-[#093a6d] text-white text-xs font-bold transition-all cursor-pointer flex items-center gap-1 shadow-sm"
+                          className="flex-1 sm:flex-initial justify-center px-3.5 sm:px-4 py-2 rounded-xl bg-[#0B4A8A] hover:bg-[#093a6d] text-white text-xs font-bold transition-all cursor-pointer flex items-center gap-1 shadow-sm"
                         >
                           <span>সম্পূর্ণ পেজ</span>
                           <ChevronRight className="w-3.5 h-3.5" />

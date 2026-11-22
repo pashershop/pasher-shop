@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Logo } from './Logo';
-import { Facebook, Instagram, Youtube, Linkedin, Phone, Mail, MapPin, Heart } from 'lucide-react';
+import { Phone, Mail, MapPin, Heart, X } from 'lucide-react';
 
 interface FooterProps {
   onNavigate: (sectionId: string) => void;
@@ -8,11 +8,43 @@ interface FooterProps {
   onOpenAuthModal: (mode: 'login' | 'signup') => void;
 }
 
+const INFO_CONTENT: Record<'help' | 'privacy' | 'terms', { title: string; body: string[] }> = {
+  help: {
+    title: 'হেল্প সেন্টার (Help Center)',
+    body: [
+      '১. আপনার আশেপাশের দোকান দেখতে সার্চ বারে পণ্যের নাম বা এলাকার নাম লিখুন।',
+      '২. লাইভ GPS বাটন ব্যবহার করে আপনার অবস্থান অনুযায়ী নিকটতম দোকানগুলো দূরত্বসহ খুঁজে নিন।',
+      '৩. কোনো দোকানি তার দোকান যুক্ত করতে চাইলে "দোকান যুক্ত করুন" বাটনে ক্লিক করে বিনামূল্যে নিবন্ধন করতে পারবেন।',
+      '৪. সরাসরি সহায়তার জন্য support@pasher.shop-এ ইমেইল করুন।',
+    ],
+  },
+  privacy: {
+    title: 'প্রাইভেসি পলিসি (Privacy Policy)',
+    body: [
+      'Pasher Shop ব্যবহারকারীর ব্যক্তিগত তথ্যের গোপনীয়তা রক্ষায় অঙ্গীকারবদ্ধ।',
+      '• আপনার জিপিএস লোকেশন শুধুমাত্র কাছের দোকানগুলোর দূরত্ব নির্ণয়ের জন্য ব্যবহৃত হয়।',
+      '• নিবন্ধিত দোকানদারদের নাম ও ফোন নম্বর ক্রেতাদের সরাসরি যোগাযোগের সুবিধার্থে প্রদর্শিত হয়।',
+      '• কোনো তৃতীয় পক্ষের কাছে ব্যবহারকারীর ব্যক্তিগত তথ্য বিক্রি বা শেয়ার করা হয় না।',
+    ],
+  },
+  terms: {
+    title: 'শর্তাবলি (Terms & Conditions)',
+    body: [
+      'Pasher Shop একটি স্থানীয় ওপেন মার্কেটপ্লেস ডিরেক্টরি প্ল্যাটফর্ম।',
+      '• পণ্যের দাম, মান ও হোম ডেলিভারি সংক্রান্ত শর্তাবলি সংশ্লিষ্ট দোকানদার কর্তৃক নির্ধারিত।',
+      '• ক্রেতা ও দোকানদার সরাসরি ফোনে বা দোকানে কথা বলে লেনদেন সম্পন্ন করবেন।',
+      '• ভুল বা অসত্য তথ্য প্রদান করলে সংশ্লিষ্ট দোকান তালিকা থেকে সরিয়ে নেওয়ার অধিকার সংরক্ষিত।',
+    ],
+  },
+};
+
 export const Footer: React.FC<FooterProps> = ({
   onNavigate,
   onOpenAddShopModal,
   onOpenAuthModal,
 }) => {
+  const [infoModalTopic, setInfoModalTopic] = useState<'help' | 'privacy' | 'terms' | null>(null);
+
   return (
     <footer className="bg-white/75 backdrop-blur-xs border-t border-[#0B4A8A]/10 pt-12 pb-8 text-[#171717] transition-colors">
       <div className="w-full px-4 sm:px-6 lg:px-8">
@@ -60,6 +92,7 @@ export const Footer: React.FC<FooterProps> = ({
             <ul className="space-y-2 text-xs sm:text-sm text-slate-600">
               <li>
                 <button
+                  type="button"
                   onClick={() => onNavigate('hero')}
                   className="hover:text-[#FF7900] transition-colors cursor-pointer"
                 >
@@ -68,6 +101,7 @@ export const Footer: React.FC<FooterProps> = ({
               </li>
               <li>
                 <button
+                  type="button"
                   onClick={() => onNavigate('nearby-shops')}
                   className="hover:text-[#FF7900] transition-colors cursor-pointer"
                 >
@@ -76,6 +110,7 @@ export const Footer: React.FC<FooterProps> = ({
               </li>
               <li>
                 <button
+                  type="button"
                   onClick={() => onNavigate('categories')}
                   className="hover:text-[#FF7900] transition-colors cursor-pointer"
                 >
@@ -84,6 +119,7 @@ export const Footer: React.FC<FooterProps> = ({
               </li>
               <li>
                 <button
+                  type="button"
                   onClick={() => onNavigate('why-us')}
                   className="hover:text-[#FF7900] transition-colors cursor-pointer"
                 >
@@ -101,6 +137,7 @@ export const Footer: React.FC<FooterProps> = ({
             <ul className="space-y-2 text-xs sm:text-sm text-slate-600">
               <li>
                 <button
+                  type="button"
                   onClick={onOpenAddShopModal}
                   className="text-[#FF7900] font-semibold hover:underline flex items-center gap-1 cursor-pointer"
                 >
@@ -109,6 +146,7 @@ export const Footer: React.FC<FooterProps> = ({
               </li>
               <li>
                 <button
+                  type="button"
                   onClick={() => onOpenAuthModal('login')}
                   className="hover:text-[#0B4A8A] transition-colors cursor-pointer"
                 >
@@ -117,6 +155,7 @@ export const Footer: React.FC<FooterProps> = ({
               </li>
               <li>
                 <button
+                  type="button"
                   onClick={() => onOpenAuthModal('signup')}
                   className="hover:text-[#0B4A8A] transition-colors cursor-pointer"
                 >
@@ -138,21 +177,74 @@ export const Footer: React.FC<FooterProps> = ({
             </h4>
             <ul className="space-y-2 text-xs sm:text-sm text-slate-600">
               <li>
-                <a href="#help" className="hover:text-[#0B4A8A] transition-colors">
+                <button
+                  type="button"
+                  onClick={() => setInfoModalTopic('help')}
+                  className="hover:text-[#0B4A8A] transition-colors cursor-pointer text-left"
+                >
                   হেল্প সেন্টার (Help Center)
-                </a>
+                </button>
               </li>
               <li>
-                <a href="#privacy" className="hover:text-[#0B4A8A] transition-colors">
+                <button
+                  type="button"
+                  onClick={() => setInfoModalTopic('privacy')}
+                  className="hover:text-[#0B4A8A] transition-colors cursor-pointer text-left"
+                >
                   প্রাইভেসি পলিসি (Privacy Policy)
-                </a>
+                </button>
               </li>
               <li>
-                <a href="#terms" className="hover:text-[#0B4A8A] transition-colors">
+                <button
+                  type="button"
+                  onClick={() => setInfoModalTopic('terms')}
+                  className="hover:text-[#0B4A8A] transition-colors cursor-pointer text-left"
+                >
                   শর্তাবলি (Terms & Conditions)
-                </a>
+                </button>
               </li>
             </ul>
+
+            {/* Support Info Modal */}
+            {infoModalTopic && (
+              <div
+                className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs"
+                onClick={() => setInfoModalTopic(null)}
+              >
+                <div
+                  className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4 text-slate-900"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <h3 className="font-black text-base text-[#0B4A8A]">
+                      {INFO_CONTENT[infoModalTopic].title}
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={() => setInfoModalTopic(null)}
+                      className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center cursor-pointer"
+                      aria-label="Close"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <div className="space-y-2.5 text-xs sm:text-sm text-slate-600 leading-relaxed">
+                    {INFO_CONTENT[infoModalTopic].body.map((line, i) => (
+                      <p key={i}>{line}</p>
+                    ))}
+                  </div>
+                  <div className="pt-2 flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => setInfoModalTopic(null)}
+                      className="px-4 py-2 rounded-xl bg-[#0B4A8A] text-white text-xs font-bold hover:bg-[#093a6d] cursor-pointer"
+                    >
+                      বুঝেছি
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Social Media Icons */}
             <div className="pt-2">

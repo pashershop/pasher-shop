@@ -14,7 +14,6 @@ import { WhyPasherShopSection } from './components/WhyPasherShopSection';
 import { ShopOwnerCTASection } from './components/ShopOwnerCTASection';
 import { Footer } from './components/Footer';
 
-import { ShopModal } from './components/ShopModal';
 import { ShopDetailPage } from './components/ShopDetailPage';
 import { ProductModal } from './components/ProductModal';
 import { AddShopModal } from './components/AddShopModal';
@@ -27,9 +26,8 @@ import { ProductsPage } from './components/ProductsPage';
 import { PriceComparePage } from './components/PriceComparePage';
 import { BottomNavBar, AppView } from './components/BottomNavBar';
 import { FloatingLocationButton } from './components/FloatingLocationButton';
-import { CartoonBazaarBackground } from './components/CartoonBazaarBackground';
 
-import { SHOPS, FEATURED_PRODUCTS } from './data/mockData';
+import { SHOPS } from './data/mockData';
 import { d1Service } from './services/d1Service';
 import { Shop, ProductItem, CategoryId } from './types';
 import {
@@ -121,6 +119,14 @@ export default function App() {
     }
   });
 
+  const refreshProductsFromD1 = React.useCallback(() => {
+    d1Service.getAllProducts().then((productsFromD1) => {
+      if (Array.isArray(productsFromD1)) {
+        setAllProducts(productsFromD1);
+      }
+    });
+  }, []);
+
   // Sync session and data with Cloudflare D1 SQL database (DB: pasher-shop-db)
   React.useEffect(() => {
     // Check active session
@@ -138,12 +144,8 @@ export default function App() {
       }
     });
 
-    d1Service.getAllProducts().then((productsFromD1) => {
-      if (productsFromD1 && productsFromD1.length > 0) {
-        setAllProducts(productsFromD1);
-      }
-    });
-  }, []);
+    refreshProductsFromD1();
+  }, [refreshProductsFromD1]);
 
   const handleLogout = async () => {
     await d1Service.logout();
@@ -165,7 +167,9 @@ export default function App() {
     } catch (e) {}
 
     // Persist to Cloudflare D1 SQL (DB: pasher-shop-db)
-    d1Service.createShop(newShop);
+    d1Service.createShop(newShop).then(() => {
+      refreshProductsFromD1();
+    });
   };
 
   const handleUpdateShop = (updatedShop: Shop) => {
@@ -199,13 +203,17 @@ export default function App() {
   }>({ isOpen: false, mode: 'login' });
 
   const [isLocating, setIsLocating] = useState<boolean>(false);
+  const [locationNotice, setLocationNotice] = useState<string>('');
 
   // Automatic high-accuracy live real location detection
   const detectLiveLocation = () => {
     if (!navigator.geolocation) {
-      alert('আপনার ডিভাইসে বা ব্রাউজারে লোকেশন সুবিধা চালু নেই।');
+      setLocationNotice('আপনার ডিভাইসে বা ব্রাউজারে লোকেশন সুবিধা চালু নেই। সকল এলাকার দোকান দেখানো হচ্ছে।');
+      setCurrentArea((prev) => (prev.includes('রিয়েল লোকেশন') ? 'সকল এলাকা (সমগ্র বাংলাদেশ)' : prev));
+      setTimeout(() => setLocationNotice(''), 5000);
       return;
     }
+    setLocationNotice('');
     setIsLocating(true);
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
@@ -230,6 +238,7 @@ export default function App() {
       },
       (err) => {
         setIsLocating(false);
+        setCurrentArea((prev) => (prev.includes('রিয়েল লোকেশন') ? 'সকল এলাকা (সমগ্র বাংলাদেশ)' : prev));
         console.log('Location detection skipped or unavailable:', err.message);
       },
       { timeout: 12000, enableHighAccuracy: true, maximumAge: 0 }
@@ -274,8 +283,12 @@ export default function App() {
         if (!matchesName && !matchesCategory && !matchesProducts) return false;
       }
 
-      // If user selected a specific area manually (and not auto-detect or all areas)
-      if (!isAutoDetected && !currentArea.includes('সকল এলাকা')) {
+      // If user selected a specific area manually (and not auto-detect, placeholder, or all areas)
+      if (
+        !isAutoDetected &&
+        !currentArea.includes('সকল এলাকা') &&
+        !currentArea.includes('রিয়েল লোকেশন')
+      ) {
         const parts = currentArea.split(',').map((p) => p.trim().toLowerCase());
         const matchesAnyPart = parts.some(
           (part) =>
@@ -329,6 +342,7 @@ export default function App() {
               imageUrl: s.coverImage || '',
               shopName: s.nameBn,
               shopArea: s.area,
+              shopPhone: s.phone,
               isAvailable: true,
               stockStatus: 'ইন স্টক',
               descriptionBn: '',
@@ -384,10 +398,7 @@ export default function App() {
   };
 
   return (
-    <div className="relative min-h-screen flex flex-col bg-transparent text-[#171717] font-sans antialiased selection:bg-[#FF7900]/20 selection:text-[#0B4A8A] pb-20 sm:pb-24">
-      {/* Pure Inline-Code Cartoon Bazaar Background */}
-      <CartoonBazaarBackground />
-      
+    <div className="relative min-h-screen w-full max-w-full overflow-x-hidden flex flex-col bg-gradient-to-b from-[#EAF2FF] via-[#F8FAFC] to-[#EEF4FF] text-[#171717] font-sans antialiased selection:bg-[#FF7900]/20 selection:text-[#0B4A8A] pb-20 sm:pb-24">
       {/* Google Maps Platform Quota Warning Banner */}
       {quotaExceeded && (
         <div className="bg-amber-50 border-b border-amber-200 text-amber-900 px-4 py-2.5 text-xs md:text-sm text-center sticky top-0 z-50 shadow-sm">
@@ -406,6 +417,13 @@ export default function App() {
         </div>
       )}
 
+      {/* Non-blocking Location Notice Banner */}
+      {locationNotice && (
+        <div className="bg-amber-50 border-b border-amber-200 text-amber-900 px-4 py-2 text-xs text-center">
+          {locationNotice}
+        </div>
+      )}
+
       {/* Header & Top Navigation */}
       <Header
         hasOwnedShop={!!myShop}
@@ -419,7 +437,7 @@ export default function App() {
       />
 
       {/* Conditional Dedicated Views Rendering */}
-      <div className="relative z-10 flex-1 flex flex-col">
+      <div className="relative z-10 flex-1 flex flex-col w-full min-w-0">
       {activeShop ? (
         <ShopDetailPage
           shop={activeShop}
@@ -435,6 +453,7 @@ export default function App() {
           <ShopkeeperDashboard
             shop={myShop}
             onUpdateShop={handleUpdateShop}
+            onProductsChanged={refreshProductsFromD1}
             onOpenCustomerPreview={(shop) => setActiveShop(shop)}
             onBackToHome={() => setCurrentView('home')}
             onOpenAddShop={() => setIsAddShopOpen(true)}
@@ -483,7 +502,7 @@ export default function App() {
       ) : (
         /* Home Landing View */
         <>
-          <main className="flex-1">
+          <main className="flex-1 w-full min-w-0 overflow-x-hidden">
             {/* Hero Section */}
             <HeroSection
               currentArea={currentArea}
@@ -498,6 +517,7 @@ export default function App() {
             {/* Categories Section */}
             <CategoriesSection
               selectedCategory={selectedCategory}
+              shops={allShops}
               onSelectCategory={(catId) => {
                 setSelectedCategory(catId);
                 setCurrentView('shops');

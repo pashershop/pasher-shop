@@ -407,7 +407,7 @@ export default {
           query += ' AND category_id = ?';
           params.push(category);
         }
-        if (area && !area.includes('সকল এলাকা')) {
+        if (area && !area.includes('সকল এলাকা') && !area.includes('রিয়েল লোকেশন')) {
           query += ' AND (area LIKE ? OR address_bn LIKE ?)';
           params.push(`%${area}%`, `%${area}%`);
         }

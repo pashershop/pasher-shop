@@ -89,10 +89,10 @@ export const PriceComparisonSection: React.FC<PriceComparisonSectionProps> = ({
 
             {/* Comparison Showcase Container */}
             {activeItem && (
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start bg-[#F8FAFC] rounded-2xl p-5 sm:p-7 border border-[#E5E7EB]">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-8 items-start bg-[#F8FAFC] rounded-2xl p-4 sm:p-7 border border-[#E5E7EB] w-full overflow-hidden">
                 
                 {/* Active Product Preview & Savings Banner */}
-                <div className="lg:col-span-4 flex flex-col space-y-4">
+                <div className="lg:col-span-4 min-w-0 flex flex-col space-y-4">
                   <div className="bg-white p-4 rounded-xl border border-[#E5E7EB] shadow-xs">
                     <div className="w-full h-36 rounded-lg bg-slate-100 overflow-hidden mb-3">
                       <img
@@ -130,7 +130,7 @@ export const PriceComparisonSection: React.FC<PriceComparisonSectionProps> = ({
                 </div>
 
                 {/* Shop-by-Shop Price Comparison Table */}
-                <div className="lg:col-span-8 flex flex-col space-y-3">
+                <div className="lg:col-span-8 min-w-0 flex flex-col space-y-3">
                   <div className="text-xs font-bold text-slate-500 uppercase tracking-wider px-2">
                     কাছের দোকানগুলোর রেট চার্ট ({activeItem.shops.length}টি দোকান যাচাইকৃত)
                   </div>
@@ -149,7 +149,7 @@ export const PriceComparisonSection: React.FC<PriceComparisonSectionProps> = ({
                         }`}
                       >
                         {/* Shop Info */}
-                        <div className="flex items-start gap-3">
+                        <div className="flex items-start gap-3 min-w-0">
                           <div
                             className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
                               isBest ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'
@@ -158,8 +158,8 @@ export const PriceComparisonSection: React.FC<PriceComparisonSectionProps> = ({
                             <Store className="w-5 h-5" />
                           </div>
 
-                          <div>
-                            <div className="flex items-center gap-2">
+                          <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-2">
                               <span className="font-bold text-base text-[#171717]">
                                 {shop.shopName}
                               </span>
@@ -171,7 +171,7 @@ export const PriceComparisonSection: React.FC<PriceComparisonSectionProps> = ({
                               )}
                             </div>
 
-                            <div className="flex items-center gap-3 text-xs text-slate-500 mt-1">
+                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500 mt-1">
                               <span className="flex items-center gap-1">
                                 <MapPin className="w-3 h-3 text-[#FF7900]" />
                                 <span>{shop.shopArea}</span>
@@ -183,7 +183,7 @@ export const PriceComparisonSection: React.FC<PriceComparisonSectionProps> = ({
                         </div>
 
                         {/* Price & Action */}
-                        <div className="flex items-center justify-between sm:justify-end gap-5 pt-3 sm:pt-0 border-t sm:border-t-0 border-slate-100">
+                        <div className="flex flex-wrap items-center justify-between sm:justify-end gap-3 sm:gap-5 pt-3 sm:pt-0 border-t sm:border-t-0 border-slate-100 shrink-0">
                           <div className="text-left sm:text-right">
                             <div className="text-2xl font-black text-[#0B4A8A] tabular-nums">
                               ৳{shop.price}

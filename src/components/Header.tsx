@@ -32,15 +32,15 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header className="sticky top-2 sm:top-3 z-40 px-2.5 sm:px-4 lg:px-6 pointer-events-none transition-all">
-      <div className="w-full pointer-events-auto bg-gradient-to-r from-[#073463]/95 via-[#0B4A8A]/95 to-[#1262B5]/95 backdrop-blur-md text-white border border-white/20 rounded-full shadow-lg px-3.5 sm:px-5 lg:px-6 transition-all">
+    <header className="sticky top-2 sm:top-3 z-40 w-full px-2.5 sm:px-4 lg:px-6 pointer-events-none transition-all">
+      <div className="w-full max-w-full pointer-events-auto bg-gradient-to-r from-[#073463]/95 via-[#0B4A8A]/95 to-[#1262B5]/95 backdrop-blur-md text-white border border-white/20 rounded-full shadow-lg px-3.5 sm:px-5 lg:px-6 transition-all">
         {/* Sleek, compact rounded header bar: h-12 sm:h-14 */}
-        <div className="flex items-center justify-between h-12 sm:h-14 gap-2 sm:gap-4">
+        <div className="flex items-center justify-between h-12 sm:h-14 gap-2 sm:gap-4 min-w-0">
           
           {/* Zone 1: Brand Wordmark / Logo */}
           <button
             onClick={() => handleNavView('home')}
-            className="flex items-center text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7900] rounded-full px-1 py-0.5 cursor-pointer shrink-0"
+            className="flex items-center text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7900] rounded-full px-1 py-0.5 cursor-pointer shrink-0 min-w-0"
           >
             <Logo size="sm" variant="dark" />
           </button>

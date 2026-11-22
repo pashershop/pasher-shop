@@ -58,12 +58,21 @@ export const FeaturedProductsSection: React.FC<FeaturedProductsSectionProps> = (
               >
                 {/* Product Image */}
                 <div className="relative h-48 w-full bg-slate-50 overflow-hidden flex items-center justify-center p-3">
-                  <img
-                    src={product.imageUrl}
-                    alt={product.nameBn}
-                    className="w-full h-full object-cover rounded-xl group-hover:scale-105 animate-image-kenburns transition-transform duration-300 opacity-95"
-                    referrerPolicy="no-referrer"
-                  />
+                  {product.imageUrl ? (
+                    <img
+                      src={product.imageUrl}
+                      alt={product.nameBn}
+                      className="w-full h-full object-cover rounded-xl group-hover:scale-105 animate-image-kenburns transition-transform duration-300 opacity-95"
+                      referrerPolicy="no-referrer"
+                      onError={(e) => {
+                        (e.target as HTMLElement).style.display = 'none';
+                      }}
+                    />
+                  ) : (
+                    <div className="w-full h-full rounded-xl bg-slate-100 flex items-center justify-center text-slate-300">
+                      <Store className="w-10 h-10 text-[#0B4A8A]/35" />
+                    </div>
+                  )}
 
                   {/* Stock Status Badge */}
                   <div className="absolute top-4 left-4">
@@ -71,13 +80,19 @@ export const FeaturedProductsSection: React.FC<FeaturedProductsSectionProps> = (
                       className={`inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-md shadow-xs backdrop-blur-xs ${
                         product.stockStatus === 'ইন স্টক'
                           ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                          : product.stockStatus === 'স্টক শেষ'
+                          ? 'bg-rose-50 text-rose-700 border border-rose-200'
                           : 'bg-amber-50 text-amber-700 border border-amber-200'
                       }`}
                     >
                       {product.stockStatus === 'ইন স্টক' ? (
                         <CheckCircle2 className="w-3 h-3 text-emerald-600" />
                       ) : (
-                        <AlertCircle className="w-3 h-3 text-amber-600" />
+                        <AlertCircle
+                          className={`w-3 h-3 ${
+                            product.stockStatus === 'স্টক শেষ' ? 'text-rose-600' : 'text-amber-600'
+                          }`}
+                        />
                       )}
                       <span>{product.stockStatus}</span>
                     </span>
@@ -93,17 +108,18 @@ export const FeaturedProductsSection: React.FC<FeaturedProductsSectionProps> = (
                 <div className="p-5 flex-1 flex flex-col justify-between">
                   <div>
                     {/* Shop Details Affiliation */}
-                    <div className="flex items-center justify-between text-xs text-slate-500 mb-2">
+                    <div className="flex items-center justify-between text-xs text-slate-500 mb-2 gap-2">
                       <button
+                        type="button"
                         onClick={() => onSelectShopById(product.shopId)}
-                        className="inline-flex items-center gap-1 font-semibold text-[#0B4A8A] hover:underline"
+                        className="inline-flex items-center gap-1 font-semibold text-[#0B4A8A] hover:underline cursor-pointer min-w-0"
                       >
-                        <Store className="w-3.5 h-3.5 text-[#0B4A8A]" />
+                        <Store className="w-3.5 h-3.5 text-[#0B4A8A] shrink-0" />
                         <span className="truncate max-w-[150px]">{product.shopName}</span>
                       </button>
-                      <span className="inline-flex items-center gap-0.5 text-slate-400">
+                      <span className="inline-flex items-center gap-0.5 text-slate-400 shrink-0">
                         <MapPin className="w-3 h-3 text-[#FF7900]" />
-                        <span>{product.shopArea}</span>
+                        <span className="truncate max-w-[110px]">{product.shopArea}</span>
                       </span>
                     </div>
 
@@ -117,7 +133,7 @@ export const FeaturedProductsSection: React.FC<FeaturedProductsSectionProps> = (
                       <span className="text-2xl font-extrabold text-[#0B4A8A] tabular-nums">
                         ৳{product.price}
                       </span>
-                      {product.originalPrice && (
+                      {product.originalPrice && product.originalPrice > product.price && (
                         <span className="text-xs text-slate-400 line-through tabular-nums">
                           ৳{product.originalPrice}
                         </span>
@@ -129,8 +145,9 @@ export const FeaturedProductsSection: React.FC<FeaturedProductsSectionProps> = (
                   {/* View Details Action Button */}
                   <div className="pt-4 mt-4 border-t border-slate-100 flex items-center gap-2">
                     <button
+                      type="button"
                       onClick={() => onSelectProduct(product)}
-                      className="w-full py-2.5 px-4 text-xs font-bold text-slate-800 bg-slate-100 hover:bg-[#FF7900] hover:text-white transition-all duration-150 flex items-center justify-center gap-2 active:scale-[0.99]"
+                      className="w-full py-2.5 px-4 rounded-xl text-xs font-bold text-slate-800 bg-slate-100 hover:bg-[#FF7900] hover:text-white transition-all duration-150 flex items-center justify-center gap-2 active:scale-[0.99] cursor-pointer"
                     >
                       <Eye className="w-4 h-4" />
                       <span>বিস্তারিত দেখুন</span>

@@ -48,7 +48,7 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
         isVisible ? 'translate-y-0' : 'translate-y-full'
       }`}
     >
-      <div className="max-w-lg sm:max-w-xl mx-auto px-2 py-1.5 flex items-center justify-around">
+      <div className="w-full max-w-lg sm:max-w-xl mx-auto px-1 sm:px-2 py-1.5 grid grid-cols-5 items-center">
         {navItems.map(({ id, label, Icon }) => {
           const isActive = currentView === id;
           return (
@@ -56,7 +56,7 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
               key={id}
               type="button"
               onClick={() => onNavigateView(id)}
-              className={`relative flex flex-col items-center justify-center py-1 px-3 rounded-xl transition-all cursor-pointer ${
+              className={`relative flex flex-col items-center justify-center py-1 px-1 sm:px-2 rounded-xl transition-all cursor-pointer min-w-0 ${
                 isActive
                   ? 'text-[#0B4A8A] font-extrabold scale-105'
                   : 'text-slate-500 hover:text-slate-800'

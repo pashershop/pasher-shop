@@ -51,6 +51,7 @@ export const NearbyShopsMap: React.FC<NearbyShopsMapProps> = ({
   const [selectedShop, setSelectedShop] = useState<Shop | null>(null);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [isLocating, setIsLocating] = useState(false);
+  const [locationError, setLocationError] = useState<string>('');
 
   // Update map center when currentArea or selectedCoordinates change
   useEffect(() => {
@@ -69,10 +70,10 @@ export const NearbyShopsMap: React.FC<NearbyShopsMapProps> = ({
   // Request browser location for real user pin
   const handleGetLiveLocation = () => {
     if (!navigator.geolocation) {
-      alert('আপনার ব্রাউজারে লোকেশন সার্ভিস সমর্থিত নয়।');
+      setLocationError('আপনার ব্রাউজারে লোকেশন সার্ভিস সমর্থিত নয়।');
       return;
     }
-
+    setLocationError('');
     setIsLocating(true);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
@@ -84,6 +85,7 @@ export const NearbyShopsMap: React.FC<NearbyShopsMapProps> = ({
       },
       () => {
         setIsLocating(false);
+        setLocationError('লোকেশন পাওয়া যায়নি; ডিফল্ট এলাকা দেখানো হচ্ছে।');
         // Fallback to Dhanmondi
         setCenter(AREA_COORDINATES['ধানমন্ডি, ঢাকা']);
       },
@@ -114,13 +116,18 @@ export const NearbyShopsMap: React.FC<NearbyShopsMapProps> = ({
           type="button"
           onClick={handleGetLiveLocation}
           disabled={isLocating}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-[#0B4A8A] bg-white hover:bg-slate-100 border border-slate-200 transition-colors shadow-2xs"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-[#0B4A8A] bg-white hover:bg-slate-100 border border-slate-200 transition-colors shadow-2xs cursor-pointer"
           title="আমার বর্তমান অবস্থান ট্র্যাক করুন"
         >
           <Navigation className={`w-3.5 h-3.5 text-[#FF7900] ${isLocating ? 'animate-spin' : ''}`} />
           <span>{isLocating ? 'অবস্থান খোঁজা হচ্ছে...' : 'আমার অবস্থান (GPS)'}</span>
         </button>
       </div>
+      {locationError && (
+        <div className="px-4 py-2 bg-amber-50 border-b border-amber-200 text-xs font-semibold text-amber-800">
+          {locationError}
+        </div>
+      )}
 
       {/* Map Canvas Container (Explicit Height as per CF2) */}
       <div className="relative w-full h-[440px] sm:h-[500px] bg-slate-100">

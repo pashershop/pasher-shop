@@ -17,8 +17,7 @@ import {
   CheckCircle2,
   ExternalLink,
 } from 'lucide-react';
-import { Shop, ProductItem } from '../types';
-import { SHOPS, FEATURED_PRODUCTS } from '../data/mockData';
+import { Shop } from '../types';
 
 interface CustomerDashboardProps {
   currentArea: string;
@@ -70,12 +69,12 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
   const favoriteShops: Shop[] = [];
 
   return (
-    <div className="min-h-screen bg-transparent text-slate-900 pb-28 pt-4 px-4 sm:px-6 lg:px-8 transition-colors">
+    <div className="min-h-screen w-full overflow-x-hidden bg-transparent text-slate-900 pb-28 pt-4 px-3 sm:px-6 lg:px-8 transition-colors">
       <div className="w-full space-y-6">
         
         {/* Top Header Banner matching Header Gradient */}
-        <div className="flex flex-wrap items-center justify-between gap-4 bg-gradient-to-r from-[#073463] via-[#0B4A8A] to-[#1262B5] text-white rounded-3xl p-5 sm:p-6 shadow-md border border-white/15">
-          <div>
+        <div className="flex flex-wrap items-center justify-between gap-4 bg-gradient-to-r from-[#073463] via-[#0B4A8A] to-[#1262B5] text-white rounded-3xl p-4 sm:p-6 shadow-md border border-white/15">
+          <div className="min-w-0">
             <div className="flex items-center gap-2">
               <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-white/15 text-orange-200 border border-white/20 flex items-center gap-1">
                 <Sparkles className="w-3 h-3 text-[#FF7900]" />
@@ -90,7 +89,7 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
             </p>
           </div>
 
-          <div className="flex items-center gap-2.5">
+          <div className="flex flex-wrap items-center gap-2.5">
             <button
               onClick={onBackToHome}
               className="px-4 py-2 text-xs font-semibold text-white bg-white/15 hover:bg-white/25 border border-white/20 rounded-full transition-all cursor-pointer shadow-2xs"
@@ -110,14 +109,14 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
         {/* User Profile Overview & GPS Card (Full Width) */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 w-full">
           {/* User Card */}
-          <div className="lg:col-span-2 p-5 sm:p-6 rounded-3xl bg-white border border-slate-200 shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-[#0B4A8A]/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="lg:col-span-2 min-w-0 p-4 sm:p-6 rounded-3xl bg-white border border-slate-200 shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-48 h-48 sm:w-64 sm:h-64 bg-[#0B4A8A]/10 rounded-full blur-3xl pointer-events-none" />
             
-            <div className="flex items-center gap-4 relative z-10">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-[#0B4A8A] to-[#FF7900] flex items-center justify-center text-white font-black text-2xl shadow-lg border-2 border-white/20">
-                <User className="w-8 h-8" />
+            <div className="flex items-center gap-3 sm:gap-4 relative z-10 min-w-0">
+              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-tr from-[#0B4A8A] to-[#FF7900] flex items-center justify-center text-white font-black text-2xl shadow-lg border-2 border-white/20 shrink-0">
+                <User className="w-7 h-7 sm:w-8 sm:h-8" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <div className="flex items-center gap-2">
                   <h2 className="text-xl font-bold text-slate-900">
                     {currentUser?.name || 'সম্মানিত গ্রাহক'}
@@ -246,9 +245,9 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
         {/* Tab 1: Favorite Shops (Full Width Cards) */}
         {activeTab === 'favorites' && (
           <div className="space-y-4 w-full">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                <Store className="w-5 h-5 text-[#FF7900]" />
+                <Store className="w-5 h-5 text-[#FF7900] shrink-0" />
                 <span>আমার নিবন্ধিত প্রিয় দোকানসমূহ</span>
               </h3>
               <button
@@ -401,9 +400,9 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
         {/* Tab 3: Price Search History (Full Width) */}
         {activeTab === 'searches' && (
           <div className="w-full bg-white border border-slate-200 rounded-3xl p-5 sm:p-6 shadow-md space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                <Search className="w-5 h-5 text-amber-500" />
+                <Search className="w-5 h-5 text-amber-500 shrink-0" />
                 <span>সাম্প্রতিক মূল্য যাচাই ইতিহাস</span>
               </h3>
               <button
@@ -451,8 +450,8 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
         )}
 
         {/* Big Merchant Program CTA Banner (Full Width) */}
-        <div className="w-full p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-[#0B4A8A] via-[#093a6d] to-slate-900 border border-[#0B4A8A]/30 shadow-xl relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="absolute top-0 right-0 w-80 h-80 bg-[#FF7900]/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="w-full p-5 sm:p-8 rounded-3xl bg-gradient-to-r from-[#0B4A8A] via-[#093a6d] to-slate-900 border border-[#0B4A8A]/30 shadow-xl relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="absolute top-0 right-0 w-52 h-52 sm:w-80 sm:h-80 bg-[#FF7900]/10 rounded-full blur-3xl pointer-events-none" />
 
           <div className="space-y-3 max-w-2xl relative z-10 text-white">
             <span className="px-3 py-1 rounded-full text-xs font-extrabold bg-[#FF7900] text-white shadow-sm inline-flex items-center gap-1.5">

@@ -59,18 +59,9 @@ export const ShopDetailPage: React.FC<ShopDetailPageProps> = ({
   const [hoverStars, setHoverStars] = useState<number>(0);
   const [reviewerName, setReviewerName] = useState<string>('');
   const [reviewerComment, setReviewerComment] = useState<string>('');
+  const [reviewError, setReviewError] = useState<string>('');
   const [isSubmitted, setIsSubmitted] = useState<boolean>(false);
   const [copiedToast, setCopiedToast] = useState<boolean>(false);
-
-  // Scroll to top when opening & sync reviews from Cloudflare D1
-  useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
-    d1Service.getReviews(shop.id).then((d1Reviews) => {
-      if (d1Reviews && d1Reviews.length > 0) {
-        setReviewsList(d1Reviews);
-      }
-    });
-  }, [shop.id]);
 
   // Reviews List for this shop
   const [reviewsList, setReviewsList] = useState<CustomerReview[]>(() => {
@@ -81,6 +72,24 @@ export const ShopDetailPage: React.FC<ShopDetailPageProps> = ({
 
     return [];
   });
+
+  // Scroll to top when opening & sync reviews from Cloudflare D1 when switching shops
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
+    setReviewError('');
+    setIsSubmitted(false);
+    try {
+      const saved = localStorage.getItem(`pasher_reviews_${shop.id}`);
+      setReviewsList(saved ? JSON.parse(saved) : []);
+    } catch {
+      setReviewsList([]);
+    }
+    d1Service.getReviews(shop.id).then((d1Reviews) => {
+      if (Array.isArray(d1Reviews) && d1Reviews.length > 0) {
+        setReviewsList(d1Reviews);
+      }
+    });
+  }, [shop.id]);
 
   // Calculate live distance
   const hasUserCoords = !!userCoordinates;
@@ -97,9 +106,10 @@ export const ShopDetailPage: React.FC<ShopDetailPageProps> = ({
   const handleSubmitReview = (e: React.FormEvent) => {
     e.preventDefault();
     if (!reviewerComment.trim()) {
-      alert('অনুগ্রহ করে রিভিউ বা মন্তব্য লিখুন।');
+      setReviewError('অনুগ্রহ করে রিভিউ বা মন্তব্য লিখুন।');
       return;
     }
+    setReviewError('');
 
     const newRev: CustomerReview = {
       id: `rev-${Date.now()}`,
@@ -125,11 +135,15 @@ export const ShopDetailPage: React.FC<ShopDetailPageProps> = ({
   };
 
   const handleCopyLink = () => {
-    try {
-      navigator.clipboard.writeText(window.location.href);
-      setCopiedToast(true);
-      setTimeout(() => setCopiedToast(false), 2500);
-    } catch (e) {}
+    if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+      navigator.clipboard
+        .writeText(window.location.href)
+        .then(() => {
+          setCopiedToast(true);
+          setTimeout(() => setCopiedToast(false), 2500);
+        })
+        .catch(() => {});
+    }
   };
 
   // Nearby other shops in the same category or area
@@ -138,19 +152,21 @@ export const ShopDetailPage: React.FC<ShopDetailPageProps> = ({
     .slice(0, 3);
 
   const averageRating = (
-    reviewsList.reduce((acc, r) => acc + r.rating, 0) / (reviewsList.length || 1)
+    reviewsList.length > 0
+      ? reviewsList.reduce((acc, r) => acc + (Number(r.rating) || 0), 0) / reviewsList.length
+      : Number(shop.rating) || 5.0
   ).toFixed(1);
 
   return (
-    <div className="min-h-screen bg-transparent text-slate-900 pb-28 transition-colors">
+    <div className="min-h-screen w-full overflow-x-hidden bg-transparent text-slate-900 pb-28 transition-colors">
       
       {/* 1. Top Navigation Bar matching Header Gradient */}
-      <div className="w-full px-4 sm:px-6 lg:px-8 pt-4">
-        <div className="bg-gradient-to-r from-[#073463] via-[#0B4A8A] to-[#1262B5] text-white rounded-3xl px-4 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-3 shadow-md border border-white/15">
-          <div className="flex items-center gap-2.5 truncate">
+      <div className="w-full px-3 sm:px-6 lg:px-8 pt-4">
+        <div className="bg-gradient-to-r from-[#073463] via-[#0B4A8A] to-[#1262B5] text-white rounded-3xl px-3 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-2 sm:gap-3 shadow-md border border-white/15">
+          <div className="flex items-center gap-2 sm:gap-2.5 min-w-0 flex-1">
             <button
               onClick={onBack}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs sm:text-sm font-bold text-white bg-white/15 hover:bg-white/25 border border-white/20 transition-colors cursor-pointer shrink-0"
+              className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full text-xs sm:text-sm font-bold text-white bg-white/15 hover:bg-white/25 border border-white/20 transition-colors cursor-pointer shrink-0"
               title="পেছনের তালিকায় ফিরুন"
             >
               <ArrowLeft className="w-4 h-4 text-[#FF7900]" />
@@ -159,15 +175,15 @@ export const ShopDetailPage: React.FC<ShopDetailPageProps> = ({
 
             <div className="h-4 w-px bg-white/25 hidden sm:block shrink-0" />
 
-            <div className="truncate">
+            <div className="truncate min-w-0">
               <span className="text-xs text-blue-100 hidden md:inline">দোকান বিস্তারিত / </span>
-              <span className="text-sm font-extrabold text-white truncate">
+              <span className="text-xs sm:text-sm font-extrabold text-white truncate block sm:inline">
                 {shop.nameBn}
               </span>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             {/* Share button */}
             <button
               onClick={handleCopyLink}
@@ -190,22 +206,23 @@ export const ShopDetailPage: React.FC<ShopDetailPageProps> = ({
             {/* Direct Call Button (Bright Green) */}
             <a
               href={`tel:${shop.phone.replace(/[^0-9]/g, '')}`}
-              className="px-4 py-2 rounded-full text-xs sm:text-sm font-black text-white bg-emerald-600 hover:bg-emerald-500 active:scale-95 shadow-md flex items-center gap-1.5 transition-all"
+              className="px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-black text-white bg-emerald-600 hover:bg-emerald-500 active:scale-95 shadow-md flex items-center gap-1.5 transition-all"
             >
-              <Phone className="w-4 h-4" />
-              <span>কল দিন ({shop.phone})</span>
+              <Phone className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span className="sm:hidden">কল দিন</span>
+              <span className="hidden sm:inline">কল দিন ({shop.phone})</span>
             </a>
           </div>
         </div>
       </div>
 
-      <div className="w-full px-4 sm:px-6 lg:px-8 pt-6 space-y-6">
+      <div className="w-full px-3 sm:px-6 lg:px-8 pt-6 space-y-6">
         
         {/* 2. Full-Width Hero Showcase Card */}
         <div className="w-full bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-lg transition-all">
           
           {/* Banner Image */}
-          <div className="relative h-60 sm:h-80 w-full bg-slate-900 overflow-hidden">
+          <div className="relative h-72 sm:h-80 w-full bg-slate-900 overflow-hidden">
             <img
               src={shop.bannerImage || shop.coverImage}
               alt={shop.nameBn}
@@ -215,13 +232,13 @@ export const ShopDetailPage: React.FC<ShopDetailPageProps> = ({
             <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent pointer-events-none" />
 
             {/* Top Badges */}
-            <div className="absolute top-4 left-4 right-4 flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <span className="px-3 py-1 rounded-xl text-xs font-black bg-[#FF7900] text-white shadow-md">
+            <div className="absolute top-3 sm:top-4 left-3 right-3 sm:left-4 sm:right-4 flex flex-wrap items-center justify-between gap-2">
+              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                <span className="px-2.5 sm:px-3 py-1 rounded-xl text-[11px] sm:text-xs font-black bg-[#FF7900] text-white shadow-md">
                   {shop.categoryBn}
                 </span>
                 {shop.deliveryAvailable && (
-                  <span className="px-3 py-1 rounded-xl text-xs font-bold bg-[#0B4A8A]/90 text-white backdrop-blur-md border border-white/20 shadow-md flex items-center gap-1.5">
+                  <span className="px-2.5 sm:px-3 py-1 rounded-xl text-[11px] sm:text-xs font-bold bg-[#0B4A8A]/90 text-white backdrop-blur-md border border-white/20 shadow-md flex items-center gap-1">
                     <Truck className="w-3.5 h-3.5 text-cyan-300" />
                     <span>হোম ডেলিভারি সুবিধা</span>
                   </span>
@@ -279,35 +296,35 @@ export const ShopDetailPage: React.FC<ShopDetailPageProps> = ({
           </div>
 
           {/* Key Facts Strip (Full Width) */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-slate-100 bg-slate-50/70 p-4 border-t border-slate-100 text-xs">
-            <div className="px-3 py-1 space-y-0.5">
+          <div className="grid grid-cols-2 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-slate-100 bg-slate-50/70 p-3 sm:p-4 border-t border-slate-100 text-xs">
+            <div className="px-2 sm:px-3 py-2 sm:py-1 space-y-0.5 min-w-0">
               <span className="text-slate-400 block font-medium">আপনার থেকে দূরত্ব:</span>
-              <span className="font-extrabold text-slate-900 text-sm flex items-center gap-1">
-                <Navigation className="w-3.5 h-3.5 text-[#FF7900]" />
-                {formattedDistance}
+              <span className="font-extrabold text-slate-900 text-xs sm:text-sm flex items-center gap-1">
+                <Navigation className="w-3.5 h-3.5 text-[#FF7900] shrink-0" />
+                <span className="truncate">{formattedDistance}</span>
               </span>
             </div>
 
-            <div className="px-3 py-1 space-y-0.5">
+            <div className="px-2 sm:px-3 py-2 sm:py-1 space-y-0.5 min-w-0">
               <span className="text-slate-400 block font-medium">দোকানের সময়সূচী:</span>
-              <span className="font-extrabold text-slate-900 text-sm flex items-center gap-1">
-                <Clock className="w-3.5 h-3.5 text-blue-500" />
-                {shop.timingBn}
+              <span className="font-extrabold text-slate-900 text-xs sm:text-sm flex items-center gap-1">
+                <Clock className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                <span className="break-words">{shop.timingBn}</span>
               </span>
             </div>
 
-            <div className="px-3 py-1 space-y-0.5">
+            <div className="px-2 sm:px-3 py-2 sm:py-1 space-y-0.5 min-w-0">
               <span className="text-slate-400 block font-medium">ন্যূনতম অর্ডার:</span>
-              <span className="font-extrabold text-slate-900 text-sm text-emerald-600">
+              <span className="font-extrabold text-xs sm:text-sm text-emerald-600">
                 {shop.minOrder ? `৳${toBnNumber(shop.minOrder)}` : 'যেকোনো পরিমাণ'}
               </span>
             </div>
 
-            <div className="px-3 py-1 space-y-0.5">
+            <div className="px-2 sm:px-3 py-2 sm:py-1 space-y-0.5 min-w-0">
               <span className="text-slate-400 block font-medium">মোবাইল নম্বর:</span>
               <a
                 href={`tel:${shop.phone.replace(/[^0-9]/g, '')}`}
-                className="font-extrabold text-emerald-600 text-sm hover:underline"
+                className="font-extrabold text-emerald-600 text-xs sm:text-sm hover:underline break-all"
               >
                 {shop.phone}
               </a>
@@ -320,7 +337,7 @@ export const ShopDetailPage: React.FC<ShopDetailPageProps> = ({
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 w-full">
           
           {/* Left Column (8 cols): Route Map, Products & Reviews */}
-          <div className="lg:col-span-8 space-y-6">
+          <div className="lg:col-span-8 min-w-0 space-y-6">
             
             {/* A. Live Interactive Route & Google Navigation Map */}
             <div className="w-full bg-white rounded-3xl border border-slate-200 p-5 sm:p-6 shadow-md space-y-4">
@@ -505,7 +522,12 @@ export const ShopDetailPage: React.FC<ShopDetailPageProps> = ({
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between pt-1">
+                <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                  {reviewError && (
+                    <span className="text-xs font-bold text-rose-600">
+                      {reviewError}
+                    </span>
+                  )}
                   {isSubmitted && (
                     <span className="text-xs font-bold text-emerald-600 flex items-center gap-1">
                       <CheckCircle2 className="w-4 h-4" />
@@ -529,32 +551,34 @@ export const ShopDetailPage: React.FC<ShopDetailPageProps> = ({
                     এখনও কোনো রিভিউ যুক্ত হয়নি। আপনার মতামত লিখে প্রথম রিভিউটি প্রদান করুন!
                   </div>
                 ) : (
-                  reviewsList.map((rev) => (
+                  reviewsList.map((rev) => {
+                    const safeStars = Math.max(0, Math.min(5, Math.round(Number(rev.rating) || 0)));
+                    return (
                     <div
                       key={rev.id}
                       className="p-4 rounded-2xl bg-slate-50/80 border border-slate-200/80 space-y-1.5"
                     >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <div className="w-7 h-7 rounded-full bg-[#0B4A8A]/10 text-[#0B4A8A] flex items-center justify-center font-bold text-xs">
-                            {rev.customerName.charAt(0)}
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex flex-wrap items-center gap-2 min-w-0">
+                          <div className="w-7 h-7 rounded-full bg-[#0B4A8A]/10 text-[#0B4A8A] flex items-center justify-center font-bold text-xs shrink-0">
+                            {(rev.customerName || 'ক').charAt(0)}
                           </div>
-                          <span className="text-xs font-bold text-slate-900">
-                            {rev.customerName}
+                          <span className="text-xs font-bold text-slate-900 truncate">
+                            {rev.customerName || 'সম্মানিত ক্রেতা'}
                           </span>
-                          <span className="text-[10px] text-emerald-600 font-semibold bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
+                          <span className="text-[10px] text-emerald-600 font-semibold bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200 shrink-0">
                             ভেরিফাইড ক্রেতা
                           </span>
                         </div>
 
-                        <div className="flex items-center gap-1">
-                          {[...Array(rev.rating)].map((_, i) => (
+                        <div className="flex items-center gap-1 shrink-0">
+                          {[...Array(safeStars)].map((_, i) => (
                             <Star key={i} className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
                           ))}
                         </div>
                       </div>
 
-                      <p className="text-xs sm:text-sm text-slate-700 leading-relaxed pl-9">
+                      <p className="text-xs sm:text-sm text-slate-700 leading-relaxed pl-0 sm:pl-9 break-words">
                         "{rev.comment}"
                       </p>
 
@@ -562,7 +586,8 @@ export const ShopDetailPage: React.FC<ShopDetailPageProps> = ({
                         {rev.dateBn}
                       </div>
                     </div>
-                  ))
+                  );
+                  })
                 )}
               </div>
             </div>
@@ -570,7 +595,7 @@ export const ShopDetailPage: React.FC<ShopDetailPageProps> = ({
           </div>
 
           {/* Right Column (4 cols): Merchant Info, Trust Guarantee & Nearby Shops */}
-          <div className="lg:col-span-4 space-y-6">
+          <div className="lg:col-span-4 min-w-0 space-y-6">
             
             {/* Merchant Info Card */}
             <div className="w-full bg-white rounded-3xl border border-slate-200 p-5 shadow-md space-y-4">

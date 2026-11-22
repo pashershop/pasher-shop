@@ -11,7 +11,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { ProductItem, CategoryId } from '../types';
-import { FEATURED_PRODUCTS, CATEGORIES, SHOPS } from '../data/mockData';
+import { CATEGORIES } from '../data/mockData';
 
 interface ProductsPageProps {
   products: ProductItem[];
@@ -55,13 +55,13 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
   });
 
   return (
-    <div className="min-h-screen bg-transparent text-slate-900 pb-28 pt-4 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen w-full overflow-x-hidden bg-transparent text-slate-900 pb-28 pt-4 px-3 sm:px-6 lg:px-8">
       <div className="w-full space-y-6">
         
         {/* Title Banner matching Header Gradient */}
-        <div className="bg-gradient-to-r from-[#073463] via-[#0B4A8A] to-[#1262B5] text-white rounded-3xl p-5 sm:p-6 shadow-md border border-white/15">
+        <div className="bg-gradient-to-r from-[#073463] via-[#0B4A8A] to-[#1262B5] text-white rounded-3xl p-4 sm:p-6 shadow-md border border-white/15">
           <h1 className="text-xl sm:text-2xl font-black text-white flex items-center gap-2">
-            <ShoppingBag className="w-5 h-5 text-[#FF7900]" />
+            <ShoppingBag className="w-5 h-5 text-[#FF7900] shrink-0" />
             <span>আশেপাশের দোকানগুলোর পণ্যসমূহ</span>
           </h1>
           <p className="text-xs text-blue-100 mt-1">
@@ -137,7 +137,7 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
         </div>
 
         {/* Results Counter */}
-        <div className="text-xs font-semibold text-slate-500 flex items-center justify-between">
+        <div className="text-xs font-semibold text-slate-500 flex flex-wrap items-center justify-between gap-2">
           <span>মোট {filtered.length}টি পণ্য পাওয়া গেছে</span>
           {searchQuery && (
             <button
@@ -169,7 +169,7 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {filtered.map((item) => {
-            const shopPhone = item.shopPhone || '';
+            const shopPhone = (item.shopPhone || '').replace(/[^0-9+]/g, '');
 
             return (
               <div
@@ -178,16 +178,23 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
               >
                 <div>
                   {/* Image container */}
-                  <div className="relative h-44 bg-slate-100 overflow-hidden">
-                    <img
-                      src={item.imageUrl}
-                      alt={item.nameBn}
-                      className="w-full h-full object-cover group-hover:scale-105 animate-image-kenburns transition-transform duration-500"
-                      referrerPolicy="no-referrer"
-                    />
+                  <div className="relative h-44 bg-slate-100 overflow-hidden flex items-center justify-center">
+                    {item.imageUrl ? (
+                      <img
+                        src={item.imageUrl}
+                        alt={item.nameBn}
+                        className="w-full h-full object-cover group-hover:scale-105 animate-image-kenburns transition-transform duration-500"
+                        referrerPolicy="no-referrer"
+                        onError={(e) => {
+                          (e.target as HTMLElement).style.display = 'none';
+                        }}
+                      />
+                    ) : (
+                      <ShoppingBag className="w-10 h-10 text-[#0B4A8A]/35" />
+                    )}
                     <span
                       className={`absolute top-2.5 left-2.5 px-2.5 py-0.5 rounded-md text-[10px] font-bold text-white shadow-sm ${
-                        item.isAvailable ? 'bg-emerald-600' : 'bg-slate-600'
+                        item.isAvailable ? 'bg-emerald-600' : 'bg-rose-600'
                       }`}
                     >
                       {item.stockStatus}
@@ -203,10 +210,11 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
                   {/* Body Info */}
                   <div className="p-4 space-y-2">
                     <button
+                      type="button"
                       onClick={() => onSelectShopById(item.shopId)}
-                      className="text-[11px] font-bold text-[#0B4A8A] hover:underline flex items-center gap-1 line-clamp-1"
+                      className="text-[11px] font-bold text-[#0B4A8A] hover:underline flex items-center gap-1 line-clamp-1 cursor-pointer"
                     >
-                      <Store className="w-3 h-3 text-[#FF7900]" />
+                      <Store className="w-3 h-3 text-[#FF7900] shrink-0" />
                       <span>{item.shopName}</span>
                     </button>
 
@@ -215,7 +223,7 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
                     </h3>
 
                     <div className="text-xs text-slate-400 flex items-center gap-1">
-                      <MapPin className="w-3 h-3 text-[#FF7900]" />
+                      <MapPin className="w-3 h-3 text-[#FF7900] shrink-0" />
                       <span>{item.shopArea}</span>
                     </div>
 
@@ -236,19 +244,31 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
                 {/* Actions */}
                 <div className="p-4 pt-0 grid grid-cols-2 gap-2">
                   <button
+                    type="button"
                     onClick={() => onSelectProduct(item)}
                     className="w-full py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1"
                   >
                     <span>বিবরণ</span>
                   </button>
 
-                  <a
-                    href={`tel:${shopPhone}`}
-                    className="w-full py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-md shadow-emerald-900/20"
-                  >
-                    <Phone className="w-3.5 h-3.5" />
-                    <span>কল দিন</span>
-                  </a>
+                  {shopPhone ? (
+                    <a
+                      href={`tel:${shopPhone}`}
+                      className="w-full py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-md shadow-emerald-900/20"
+                    >
+                      <Phone className="w-3.5 h-3.5" />
+                      <span>কল দিন</span>
+                    </a>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => onSelectShopById(item.shopId)}
+                      className="w-full py-2 rounded-xl bg-[#0B4A8A] hover:bg-[#093a6d] text-white text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                    >
+                      <Store className="w-3.5 h-3.5" />
+                      <span>দোকান দেখুন</span>
+                    </button>
+                  )}
                 </div>
               </div>
             );

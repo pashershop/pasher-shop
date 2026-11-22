@@ -29,13 +29,26 @@ app.use((req, res, next) => {
 
 // Cloudflare D1 Configuration
 // Binding: DB, Database: pasher-shop-db
-const CLOUDFLARE_ACCOUNT_ID = process.env.CLOUDFLARE_ACCOUNT_ID || '';
-const CLOUDFLARE_API_TOKEN = process.env.CLOUDFLARE_API_TOKEN || '';
+const cleanEnvValue = (value?: string): string =>
+  (value || '').trim().replace(/^["']|["']$/g, '').trim();
+
+const isPlaceholderEnvValue = (value: string): boolean =>
+  !value ||
+  value.startsWith('your_') ||
+  value.startsWith('MY_') ||
+  value === 'undefined' ||
+  value === 'null';
+
+const rawAccountId = cleanEnvValue(process.env.CLOUDFLARE_ACCOUNT_ID);
+const rawApiToken = cleanEnvValue(process.env.CLOUDFLARE_API_TOKEN).replace(/^Bearer\s+/i, '').trim();
+
+const CLOUDFLARE_ACCOUNT_ID = isPlaceholderEnvValue(rawAccountId) ? '' : rawAccountId;
+const CLOUDFLARE_API_TOKEN = isPlaceholderEnvValue(rawApiToken) ? '' : rawApiToken;
 const CLOUDFLARE_D1_DATABASE_ID =
-  process.env.CLOUDFLARE_D1_DATABASE_ID ||
-  process.env.CLOUDFLARE_D1_DATABASE_NAME ||
+  cleanEnvValue(process.env.CLOUDFLARE_D1_DATABASE_ID) ||
+  cleanEnvValue(process.env.CLOUDFLARE_D1_DATABASE_NAME) ||
   'pasher-shop-db';
-const CLOUDFLARE_D1_BINDING = process.env.CLOUDFLARE_D1_BINDING || 'DB';
+const CLOUDFLARE_D1_BINDING = cleanEnvValue(process.env.CLOUDFLARE_D1_BINDING) || 'DB';
 
 const hasCloudflareCredentials = Boolean(CLOUDFLARE_ACCOUNT_ID && CLOUDFLARE_API_TOKEN);
 
@@ -101,9 +114,34 @@ function saveLocalD1Data(data: any) {
 
 let resolvedDatabaseUuid: string | null = null;
 let remoteSchemaEnsured = false;
+let remoteD1AuthDisabled = false;
+let remoteAuthNoticeLogged = false;
 let lastRemoteD1Error: string | null = null;
 
-async function getCloudflareD1DatabaseUuid(): Promise<string> {
+function isCloudflareAuthFailure(status: number, errors?: any[]): boolean {
+  if (status === 401 || status === 403) return true;
+  if (!Array.isArray(errors)) return false;
+  return errors.some(
+    (e: any) =>
+      Number(e?.code) === 10000 ||
+      Number(e?.code) === 9109 ||
+      String(e?.message || '').toLowerCase().includes('authentication')
+  );
+}
+
+function handleRemoteD1AuthFailure(reason: string) {
+  remoteD1AuthDisabled = true;
+  lastRemoteD1Error = reason;
+  if (!remoteAuthNoticeLogged) {
+    remoteAuthNoticeLogged = true;
+    console.info(
+      'Cloudflare D1 remote API credentials are invalid or unauthorized; using local persistent D1 storage.'
+    );
+  }
+}
+
+async function getCloudflareD1DatabaseUuid(): Promise<string | null> {
+  if (remoteD1AuthDisabled) return null;
   if (resolvedDatabaseUuid) return resolvedDatabaseUuid;
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   if (uuidRegex.test(CLOUDFLARE_D1_DATABASE_ID)) {
@@ -127,8 +165,15 @@ async function getCloudflareD1DatabaseUuid(): Promise<string> {
       resolvedDatabaseUuid = match.uuid;
       return match.uuid;
     }
-    if (listData?.errors?.length) {
-      lastRemoteD1Error = listData.errors.map((e: any) => e.message).join('; ');
+    if (listData?.errors?.length || !res.ok) {
+      const msg = Array.isArray(listData?.errors)
+        ? listData.errors.map((e: any) => `${e.code || ''}: ${e.message}`.trim()).join('; ')
+        : `HTTP ${res.status}`;
+      if (isCloudflareAuthFailure(res.status, listData?.errors)) {
+        handleRemoteD1AuthFailure(msg);
+        return null;
+      }
+      lastRemoteD1Error = msg;
     }
   } catch (err: any) {
     lastRemoteD1Error = err?.message || 'UUID lookup failed';
@@ -140,11 +185,15 @@ async function getCloudflareD1DatabaseUuid(): Promise<string> {
 
 // Helper to query Cloudflare D1 REST API using prepared statements
 async function queryCloudflareD1(sql: string, params: any[] = []) {
-  if (!hasCloudflareCredentials) {
+  if (!hasCloudflareCredentials || remoteD1AuthDisabled) {
     return null;
   }
 
   const dbId = await getCloudflareD1DatabaseUuid();
+  if (!dbId || remoteD1AuthDisabled) {
+    return null;
+  }
+
   const url = `https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/d1/database/${dbId}/query`;
 
   try {
@@ -162,8 +211,15 @@ async function queryCloudflareD1(sql: string, params: any[] = []) {
       lastRemoteD1Error = null;
       return data.result[0].results;
     }
-    if (data?.errors?.length) {
-      lastRemoteD1Error = data.errors.map((e: any) => `${e.code || ''}: ${e.message}`).join('; ');
+    if (data?.errors?.length || !response.ok) {
+      const errMsg = Array.isArray(data?.errors)
+        ? data.errors.map((e: any) => `${e.code || ''}: ${e.message}`.trim()).join('; ')
+        : `HTTP ${response.status}`;
+      if (isCloudflareAuthFailure(response.status, data?.errors)) {
+        handleRemoteD1AuthFailure(errMsg);
+        return null;
+      }
+      lastRemoteD1Error = errMsg;
       console.warn('Cloudflare D1 REST API query error:', lastRemoteD1Error);
     }
   } catch (err: any) {
@@ -175,7 +231,7 @@ async function queryCloudflareD1(sql: string, params: any[] = []) {
 }
 
 async function ensureRemoteD1Schema() {
-  if (!hasCloudflareCredentials || remoteSchemaEnsured) return;
+  if (!hasCloudflareCredentials || remoteSchemaEnsured || remoteD1AuthDisabled) return;
   try {
     const test = await queryCloudflareD1('SELECT 1 as ok');
     if (!test) return;
@@ -220,7 +276,7 @@ async function ensureRemoteD1Schema() {
 // ----------------------------------------------------
 app.get('/api/d1/status', async (_req, res) => {
   let remoteConnected = false;
-  if (hasCloudflareCredentials) {
+  if (hasCloudflareCredentials && !remoteD1AuthDisabled) {
     const ping = await queryCloudflareD1('SELECT 1 as ok');
     remoteConnected = Boolean(ping);
     if (remoteConnected) {
@@ -233,7 +289,6 @@ app.get('/api/d1/status', async (_req, res) => {
     connected: true,
     remoteConnected,
     mode: remoteConnected ? 'cloudflare_d1_api' : 'local_persistent_d1',
-    remoteError: remoteConnected ? null : lastRemoteD1Error,
     message: remoteConnected
       ? 'Cloudflare D1 SQL (DB: pasher-shop-db) রিমোট ক্লাউডে সংযুক্ত'
       : 'Cloudflare D1 SQL (DB: pasher-shop-db) লোকাল পারসিসটেন্ট স্টোরেজে সক্রিয় রয়েছে',
@@ -562,7 +617,12 @@ app.get('/api/shops', async (req, res) => {
       query += ' AND category_id = ?';
       params.push(category);
     }
-    if (area && typeof area === 'string' && !area.includes('সকল এলাকা')) {
+    if (
+      area &&
+      typeof area === 'string' &&
+      !area.includes('সকল এলাকা') &&
+      !area.includes('রিয়েল লোকেশন')
+    ) {
       query += ' AND (area LIKE ? OR address_bn LIKE ?)';
       params.push(`%${area}%`, `%${area}%`);
     }
@@ -608,7 +668,12 @@ app.get('/api/shops', async (req, res) => {
   if (category && category !== 'all') {
     list = list.filter((s: any) => s.categoryId === category);
   }
-  if (area && typeof area === 'string' && !area.includes('সকল এলাকা')) {
+  if (
+    area &&
+    typeof area === 'string' &&
+    !area.includes('সকল এলাকা') &&
+    !area.includes('রিয়েল লোকেশন')
+  ) {
     const q = area.toLowerCase();
     list = list.filter(
       (s: any) =>
@@ -724,6 +789,31 @@ app.post('/api/shops', async (req, res) => {
     featuredProducts: newShop.featuredProducts || [],
   };
 
+  const generatedProducts: any[] = [];
+  if (Array.isArray(completeShop.featuredProducts)) {
+    for (let idx = 0; idx < completeShop.featuredProducts.length; idx++) {
+      const fp = completeShop.featuredProducts[idx];
+      if (fp?.nameBn && fp?.price !== undefined) {
+        const prodId = `prod-${Date.now()}-${idx}`;
+        generatedProducts.push({
+          id: prodId,
+          shopId,
+          nameBn: fp.nameBn,
+          category: completeShop.categoryId || 'grocery',
+          price: Number(fp.price),
+          unit: 'কেজি',
+          inStock: true,
+          isAvailable: true,
+          stockStatus: 'ইন স্টক',
+          imageUrl: completeShop.coverImage || '',
+          shopName: completeShop.nameBn,
+          shopArea: completeShop.area,
+          shopPhone: completeShop.phone,
+        });
+      }
+    }
+  }
+
   if (hasCloudflareCredentials) {
     await queryCloudflareD1(
       `INSERT INTO shops (
@@ -754,29 +844,22 @@ app.post('/api/shops', async (req, res) => {
         completeShop.ownerPhone || completeShop.phone,
       ]
     );
+
+    for (const gp of generatedProducts) {
+      await queryCloudflareD1(
+        `INSERT INTO products (
+          id, shop_id, name_bn, category_id, price, unit, in_stock, image_url
+        ) VALUES (?, ?, ?, ?, ?, ?, 1, ?)`,
+        [gp.id, shopId, gp.nameBn, gp.category, gp.price, gp.unit, gp.imageUrl]
+      );
+    }
   }
 
   // Persist locally in pasher-shop-db.json
   const data = getLocalD1Data();
   data.shops = [completeShop, ...data.shops.filter((s: any) => s.id !== shopId)];
-
-  // Also sync initial featured products into products array if provided
-  if (Array.isArray(completeShop.featuredProducts)) {
-    completeShop.featuredProducts.forEach((fp: any, idx: number) => {
-      if (fp.nameBn && fp.price) {
-        data.products.push({
-          id: `prod-${Date.now()}-${idx}`,
-          shopId,
-          nameBn: fp.nameBn,
-          category: completeShop.categoryId || 'grocery',
-          price: Number(fp.price),
-          unit: 'কেজি',
-          inStock: true,
-          shopName: completeShop.nameBn,
-          shopArea: completeShop.area,
-        });
-      }
-    });
+  if (generatedProducts.length > 0) {
+    data.products = [...generatedProducts, ...data.products];
   }
 
   saveLocalD1Data(data);
@@ -788,7 +871,7 @@ app.post('/api/shops', async (req, res) => {
 // ----------------------------------------------------
 app.put('/api/shops/:id', async (req, res) => {
   const shopId = req.params.id;
-  const updatedData = req.body;
+  const updatedData = req.body || {};
 
   if (hasCloudflareCredentials) {
     await queryCloudflareD1(
@@ -803,13 +886,13 @@ app.put('/api/shops/:id', async (req, res) => {
         is_open = COALESCE(?, is_open)
       WHERE id = ?`,
       [
-        updatedData.nameBn,
-        updatedData.phone,
-        updatedData.addressBn,
-        updatedData.timingBn,
+        updatedData.nameBn ?? null,
+        updatedData.phone ?? null,
+        updatedData.addressBn ?? null,
+        updatedData.timingBn ?? null,
         updatedData.deliveryAvailable !== undefined ? (updatedData.deliveryAvailable ? 1 : 0) : null,
         updatedData.minOrder !== undefined ? Number(updatedData.minOrder) : null,
-        updatedData.bannerImage,
+        updatedData.bannerImage ?? null,
         updatedData.isOpen !== undefined ? (updatedData.isOpen ? 1 : 0) : null,
         shopId,
       ]
@@ -1011,7 +1094,7 @@ app.post('/api/products', async (req, res) => {
 // ----------------------------------------------------
 app.put('/api/products/:id', async (req, res) => {
   const prodId = req.params.id;
-  const body = req.body;
+  const body = req.body || {};
 
   if (hasCloudflareCredentials) {
     await queryCloudflareD1(
@@ -1025,20 +1108,30 @@ app.put('/api/products/:id', async (req, res) => {
         description_bn = COALESCE(?, description_bn)
       WHERE id = ?`,
       [
-        body.nameBn,
+        body.nameBn ?? null,
         body.price !== undefined ? Number(body.price) : null,
         body.originalPrice !== undefined ? Number(body.originalPrice) : null,
-        body.unit,
+        body.unit ?? null,
         body.inStock !== undefined ? (body.inStock ? 1 : 0) : null,
-        body.imageUrl,
-        body.descriptionBn,
+        body.imageUrl ?? null,
+        body.descriptionBn ?? null,
         prodId,
       ]
     );
   }
 
   const data = getLocalD1Data();
-  data.products = data.products.map((p: any) => (p.id === prodId ? { ...p, ...body } : p));
+  data.products = data.products.map((p: any) => {
+    if (p.id !== prodId) return p;
+    const nextInStock = body.inStock !== undefined ? Boolean(body.inStock) : p.inStock;
+    return {
+      ...p,
+      ...body,
+      inStock: nextInStock,
+      isAvailable: nextInStock,
+      stockStatus: body.stockStatus || (nextInStock ? 'ইন স্টক' : 'স্টক শেষ'),
+    };
+  });
   saveLocalD1Data(data);
 
   res.json({ success: true, id: prodId, message: 'পণ্য সফলভাবে আপডেট হয়েছে' });
@@ -1072,8 +1165,16 @@ app.get('/api/shops/:id/reviews', async (req, res) => {
       'SELECT * FROM reviews WHERE shop_id = ? ORDER BY created_at DESC',
       [shopId]
     );
-    if (remoteReviews) {
-      return res.json(remoteReviews);
+    if (remoteReviews && Array.isArray(remoteReviews)) {
+      const formatted = remoteReviews.map((r: any) => ({
+        id: r.id,
+        shopId: r.shop_id || shopId,
+        customerName: r.customer_name || r.customerName || 'সম্মানিত ক্রেতা',
+        rating: Number(r.rating) || 5,
+        comment: r.comment || '',
+        dateBn: r.date_bn || r.dateBn || 'এইমাত্র',
+      }));
+      return res.json(formatted);
     }
   }
 

@@ -12,17 +12,19 @@ import {
   LayoutGrid,
 } from 'lucide-react';
 import { CATEGORIES } from '../data/mockData';
-import { CategoryId } from '../types';
+import { CategoryId, Shop } from '../types';
 import { toBnNumber } from '../utils/geoUtils';
 
 interface CategoriesSectionProps {
   selectedCategory: CategoryId;
   onSelectCategory: (catId: CategoryId) => void;
+  shops?: Shop[];
 }
 
 export const CategoriesSection: React.FC<CategoriesSectionProps> = ({
   selectedCategory,
   onSelectCategory,
+  shops = [],
 }) => {
   const getIcon = (iconName: string) => {
     const iconClass = 'w-4 h-4 sm:w-5 sm:h-5 transition-transform group-hover:scale-110';
@@ -51,7 +53,7 @@ export const CategoriesSection: React.FC<CategoriesSectionProps> = ({
   };
 
   return (
-    <section id="categories" className="py-7 sm:py-9 bg-white/55 backdrop-blur-[1px] transition-colors">
+    <section id="categories" className="py-7 sm:py-9 bg-white/55 backdrop-blur-[1px] overflow-hidden transition-colors">
       <div className="w-full px-4 sm:px-6 lg:px-8">
         
         {/* Compact Section Header */}
@@ -81,7 +83,7 @@ export const CategoriesSection: React.FC<CategoriesSectionProps> = ({
         </div>
 
         {/* 10 Compact Category Cards Grid */}
-        <div className="grid grid-cols-5 sm:grid-cols-5 md:grid-cols-10 gap-2 sm:gap-2.5">
+        <div className="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-10 gap-2 sm:gap-2.5">
           {CATEGORIES.map((cat) => {
             const isSelected = selectedCategory === cat.id;
 
@@ -120,7 +122,12 @@ export const CategoriesSection: React.FC<CategoriesSectionProps> = ({
 
                 {/* Compact Count */}
                 <span className="text-[10px] text-slate-400 mt-0.5 tabular-nums">
-                  {toBnNumber(cat.count)}+
+                  {toBnNumber(
+                    cat.id === 'all'
+                      ? shops.length
+                      : shops.filter((s) => s.categoryId === cat.id).length || cat.count
+                  )}
+                  {shops.length === 0 && '+'}
                 </span>
 
                 {/* Active Indicator Bar */}

@@ -1,5 +1,5 @@
-import React from 'react';
-import { X, Store, MapPin, Phone, CheckCircle2, ShieldCheck, Tag } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Store, MapPin, Phone, ShoppingBag } from 'lucide-react';
 import { ProductItem } from '../types';
 
 interface ProductModalProps {
@@ -13,7 +13,15 @@ export const ProductModal: React.FC<ProductModalProps> = ({
   onClose,
   onViewShop,
 }) => {
+  const [imgFailed, setImgFailed] = useState(false);
+
+  useEffect(() => {
+    setImgFailed(false);
+  }, [product?.id]);
+
   if (!product) return null;
+
+  const cleanPhone = (product.shopPhone || '').replace(/[^0-9+]/g, '');
 
   return (
     <div
@@ -26,8 +34,9 @@ export const ProductModal: React.FC<ProductModalProps> = ({
       >
         {/* Close Button */}
         <button
+          type="button"
           onClick={onClose}
-          className="absolute top-4 right-4 z-10 w-9 h-9 rounded-full bg-white/90 hover:bg-white text-slate-700 shadow-md flex items-center justify-center transition-all focus:outline-none"
+          className="absolute top-4 right-4 z-10 w-9 h-9 rounded-full bg-white/90 hover:bg-white text-slate-700 shadow-md flex items-center justify-center transition-all focus:outline-none cursor-pointer"
           aria-label="Close modal"
         >
           <X className="w-5 h-5" />
@@ -35,12 +44,20 @@ export const ProductModal: React.FC<ProductModalProps> = ({
 
         {/* Product Image */}
         <div className="relative h-60 w-full bg-slate-100 flex items-center justify-center p-4">
-          <img
-            src={product.imageUrl}
-            alt={product.nameBn}
-            className="w-full h-full object-cover rounded-2xl"
-            referrerPolicy="no-referrer"
-          />
+          {product.imageUrl && !imgFailed ? (
+            <img
+              src={product.imageUrl}
+              alt={product.nameBn}
+              onError={() => setImgFailed(true)}
+              className="w-full h-full object-cover rounded-2xl"
+              referrerPolicy="no-referrer"
+            />
+          ) : (
+            <div className="w-full h-full rounded-2xl bg-slate-200/70 flex flex-col items-center justify-center text-slate-400 gap-2">
+              <ShoppingBag className="w-10 h-10 text-[#0B4A8A]/50" />
+              <span className="text-xs font-semibold text-slate-500">{product.nameBn}</span>
+            </div>
+          )}
           <div className="absolute bottom-3 left-4 bg-white/90 backdrop-blur-xs px-2.5 py-1 rounded-md text-xs font-bold text-slate-700 border border-slate-200">
             একক: {product.unit}
           </div>
@@ -48,10 +65,15 @@ export const ProductModal: React.FC<ProductModalProps> = ({
 
         {/* Product Details */}
         <div className="p-6 space-y-5">
-          
           <div>
             <div className="flex items-center gap-2 mb-1.5">
-              <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+              <span
+                className={`text-xs font-bold px-2 py-0.5 rounded border ${
+                  product.stockStatus === 'স্টক শেষ'
+                    ? 'text-rose-700 bg-rose-50 border-rose-200'
+                    : 'text-emerald-700 bg-emerald-50 border-emerald-200'
+                }`}
+              >
                 {product.stockStatus}
               </span>
               <span className="text-xs text-slate-400">·</span>
@@ -67,7 +89,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
               <span className="text-3xl font-black text-[#0B4A8A] tabular-nums">
                 ৳{product.price}
               </span>
-              {product.originalPrice && (
+              {product.originalPrice && product.originalPrice > product.price && (
                 <span className="text-sm text-slate-400 line-through tabular-nums">
                   ৳{product.originalPrice}
                 </span>
@@ -82,27 +104,28 @@ export const ProductModal: React.FC<ProductModalProps> = ({
               পণ্যের বিবরণ
             </h4>
             <p className="text-sm text-slate-600 leading-relaxed">
-              {product.descriptionBn}
+              {product.descriptionBn || 'এই পণ্যের বর্তমান মান ও স্টক সম্পর্কে জানতে দোকানদারের সাথে সরাসরি যোগাযোগ করুন।'}
             </p>
           </div>
 
           {/* Seller / Store Card inside */}
           <div className="p-4 rounded-2xl bg-white border border-[#E5E7EB] shadow-xs space-y-3">
-            <div className="flex items-center justify-between">
-              <div>
+            <div className="flex items-center justify-between gap-2">
+              <div className="min-w-0">
                 <span className="text-[11px] font-semibold text-slate-400 block">বিক্রেতা দোকান:</span>
-                <span className="font-bold text-sm text-[#0B4A8A] flex items-center gap-1.5">
-                  <Store className="w-4 h-4 text-[#FF7900]" />
-                  <span>{product.shopName}</span>
+                <span className="font-bold text-sm text-[#0B4A8A] flex items-center gap-1.5 truncate">
+                  <Store className="w-4 h-4 text-[#FF7900] shrink-0" />
+                  <span className="truncate">{product.shopName}</span>
                 </span>
               </div>
 
               <button
+                type="button"
                 onClick={() => {
                   onClose();
                   onViewShop(product.shopId);
                 }}
-                className="text-xs font-bold text-[#0B4A8A] hover:underline"
+                className="text-xs font-bold text-[#0B4A8A] hover:underline cursor-pointer shrink-0"
               >
                 দোকান প্রোফাইল দেখুন →
               </button>
@@ -116,18 +139,31 @@ export const ProductModal: React.FC<ProductModalProps> = ({
 
           {/* Direct Call Button */}
           <div className="pt-2">
-            <a
-              href="tel:01701123456"
-              className="w-full py-3 px-4 rounded-xl font-bold text-sm text-white bg-[#FF7900] hover:bg-[#e06b00] transition-colors flex items-center justify-center gap-2 shadow-sm"
-            >
-              <Phone className="w-4 h-4" />
-              <span>দোকানিতে কল করে স্টক কনফার্ম করুন</span>
-            </a>
+            {cleanPhone ? (
+              <a
+                href={`tel:${cleanPhone}`}
+                className="w-full py-3 px-4 rounded-xl font-bold text-sm text-white bg-[#FF7900] hover:bg-[#e06b00] transition-colors flex items-center justify-center gap-2 shadow-sm cursor-pointer"
+              >
+                <Phone className="w-4 h-4" />
+                <span>দোকানিতে কল করে স্টক কনফার্ম করুন ({product.shopPhone})</span>
+              </a>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onViewShop(product.shopId);
+                }}
+                className="w-full py-3 px-4 rounded-xl font-bold text-sm text-white bg-[#0B4A8A] hover:bg-[#093a6d] transition-colors flex items-center justify-center gap-2 shadow-sm cursor-pointer"
+              >
+                <Store className="w-4 h-4" />
+                <span>দোকানের পেজে গিয়ে যোগাযোগ করুন</span>
+              </button>
+            )}
             <p className="text-[11px] text-center text-slate-400 mt-2">
               Pasher Shop একটি ওপেন মার্কেটপ্লেস — ক্রেতা ও দোকানি সরাসরি লেনদেন করেন।
             </p>
           </div>
-
         </div>
       </div>
     </div>

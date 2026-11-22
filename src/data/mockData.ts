@@ -1,9 +1,13 @@
 import { Category, Shop, ProductItem, PriceComparisonItem } from '../types';
+import heroMarketplaceImg from '../assets/images/hero_pasher_shop_marketplace_1793695052235.jpg';
+import shopGroceryImg from '../assets/images/shop_bengali_grocery_store_1793695053012.jpg';
+import shopBazaarImg from '../assets/images/shop_fresh_produce_bazaar_1793695053074.jpg';
+import shopPharmacyImg from '../assets/images/shop_modern_local_pharmacy_1793695054634.jpg';
 
-export const HERO_IMAGE = '/src/assets/images/hero_pasher_shop_marketplace_1793695052235.jpg';
-export const SHOP_GROCERY_IMG = '/src/assets/images/shop_bengali_grocery_store_1793695053012.jpg';
-export const SHOP_BAZAAR_IMG = '/src/assets/images/shop_fresh_produce_bazaar_1793695053074.jpg';
-export const SHOP_PHARMACY_IMG = '/src/assets/images/shop_modern_local_pharmacy_1793695054634.jpg';
+export const HERO_IMAGE = heroMarketplaceImg;
+export const SHOP_GROCERY_IMG = shopGroceryImg;
+export const SHOP_BAZAAR_IMG = shopBazaarImg;
+export const SHOP_PHARMACY_IMG = shopPharmacyImg;
 
 export const AREAS = [
   { id: 'all', nameBn: 'সকল এলাকা', count: 0 },

@@ -30,7 +30,7 @@ export interface ProductItem {
   shopArea: string;
   shopPhone?: string;
   isAvailable: boolean;
-  stockStatus: 'ইন স্টক' | 'সীমিত স্টক';
+  stockStatus: 'ইন স্টক' | 'সীমিত স্টক' | 'স্টক শেষ';
   inStock?: boolean;
   descriptionBn: string;
   originalPrice?: number;
@@ -79,6 +79,7 @@ export interface PriceComparisonOption {
   shopId: string;
   shopName: string;
   shopArea: string;
+  shopPhone?: string;
   distance: string;
   price: number;
   isLowest?: boolean;

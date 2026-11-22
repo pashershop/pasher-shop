@@ -117,7 +117,7 @@ export const NearbyShopsSection: React.FC<NearbyShopsSectionProps> = ({
                   </div>
 
                   {/* Shop Details - Full Width Info Panel */}
-                  <div className="p-5 sm:p-6 flex-1 flex flex-col justify-between space-y-4">
+                  <div className="p-4 sm:p-6 flex-1 min-w-0 flex flex-col justify-between space-y-4">
                     <div>
                       {/* Category & Verification Strip */}
                       <div className="flex flex-wrap items-center justify-between gap-2 mb-1.5">
@@ -186,20 +186,20 @@ export const NearbyShopsSection: React.FC<NearbyShopsSectionProps> = ({
                     </div>
 
                     {/* Actions Row */}
-                    <div className="pt-4 border-t border-slate-100 flex items-center justify-between gap-3">
+                    <div className="pt-4 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3">
                       <span className="text-xs font-bold text-[#FF7900] group-hover:underline flex items-center gap-1">
                         <span>দোকানের বিস্তারিত ও পণ্যের পূর্ণ তালিকা দেখুন</span>
-                        <ChevronRight className="w-4 h-4" />
+                        <ChevronRight className="w-4 h-4 shrink-0" />
                       </span>
 
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                         <a
                           href={`tel:${shop.phone.replace(/[^0-9]/g, '')}`}
                           onClick={(e) => e.stopPropagation()}
-                          className="px-4 py-2 text-white bg-emerald-600 hover:bg-emerald-500 active:scale-95 shadow-sm rounded-xl text-xs font-bold transition-all flex items-center gap-1.5"
+                          className="flex-1 sm:flex-initial justify-center px-3.5 py-2 text-white bg-emerald-600 hover:bg-emerald-500 active:scale-95 shadow-sm rounded-xl text-xs font-bold transition-all flex items-center gap-1.5"
                           title={`সরাসরি কল করুন: ${shop.phone}`}
                         >
-                          <Phone className="w-3.5 h-3.5" />
+                          <Phone className="w-3.5 h-3.5 shrink-0" />
                           <span>কল দিন ({shop.phone})</span>
                         </a>
 
@@ -209,10 +209,10 @@ export const NearbyShopsSection: React.FC<NearbyShopsSectionProps> = ({
                             e.stopPropagation();
                             onSelectShop(shop);
                           }}
-                          className="px-4 py-2 text-xs font-black text-white bg-[#0B4A8A] hover:bg-[#093a6d] rounded-xl transition-all flex items-center gap-1 shadow-sm active:scale-98"
+                          className="flex-1 sm:flex-initial justify-center px-3.5 py-2 text-xs font-black text-white bg-[#0B4A8A] hover:bg-[#093a6d] rounded-xl transition-all flex items-center gap-1 shadow-sm active:scale-98"
                         >
                           <span>সম্পূর্ণ পেজ</span>
-                          <ChevronRight className="w-3.5 h-3.5" />
+                          <ChevronRight className="w-3.5 h-3.5 shrink-0" />
                         </button>
                       </div>
                     </div>
