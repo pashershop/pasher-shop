@@ -314,6 +314,41 @@ function generateToken(): string {
   return `pst_${Date.now()}_${hex}`;
 }
 
+// Stateless HMAC-SHA256 admin token signed by ADMIN_PASSWORD
+async function signAdminToken(secret: string, expiresAtMs: number): Promise<string> {
+  const enc = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    'raw',
+    enc.encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  );
+  const payload = `pasher_admin:${expiresAtMs}`;
+  const sigBuf = await crypto.subtle.sign('HMAC', key, enc.encode(payload));
+  const sigHex = Array.from(new Uint8Array(sigBuf))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+  return `admtok_${expiresAtMs}_${sigHex}`;
+}
+
+async function verifyAdminToken(token: string, secret: string): Promise<boolean> {
+  if (!token || !secret || !token.startsWith('admtok_')) return false;
+  const parts = token.split('_');
+  if (parts.length !== 3) return false;
+  const expiresAtMs = Number(parts[1]);
+  const sigHex = parts[2];
+  if (!Number.isFinite(expiresAtMs) || Date.now() > expiresAtMs) return false;
+  const expected = await signAdminToken(secret, expiresAtMs);
+  const expectedHex = expected.split('_')[2] || '';
+  if (sigHex.length !== expectedHex.length) return false;
+  let diff = 0;
+  for (let i = 0; i < sigHex.length; i++) {
+    diff |= sigHex.charCodeAt(i) ^ expectedHex.charCodeAt(i);
+  }
+  return diff === 0;
+}
+
 // Phone normalizer (converts Bengali numerals & handles +880/880 prefixes)
 function normalizePhone(phone: string): string {
   if (!phone) return '';
@@ -1210,6 +1245,423 @@ app.post('/api/shops/:id/reviews', async (req, res) => {
   saveLocalD1Data(data);
 
   res.status(201).json(newReview);
+});
+
+// ----------------------------------------------------
+// 13. Admin Console APIs (/api/admin/*) — ADMIN_PASSWORD Secret Only
+// ----------------------------------------------------
+const ENV_ADMIN_PASSWORD = cleanEnvValue(process.env.ADMIN_PASSWORD);
+
+async function resolveAdminSession(
+  req: express.Request
+): Promise<{ id: string; name: string; phone: string; role: string } | null> {
+  if (!ENV_ADMIN_PASSWORD) return null;
+  const authHeader = req.headers.authorization || '';
+  const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+  const valid = await verifyAdminToken(token, ENV_ADMIN_PASSWORD);
+  if (!valid) return null;
+  return { id: 'admin-secret', name: 'MD Robin Mia', phone: '', role: 'admin' };
+}
+
+// Admin Status: GET /api/admin/status
+app.get('/api/admin/status', async (req, res) => {
+  try {
+    const admin = await resolveAdminSession(req);
+    return res.json({
+      success: true,
+      passwordConfigured: Boolean(ENV_ADMIN_PASSWORD),
+      authenticated: Boolean(admin),
+      admin: admin || null,
+    });
+  } catch (err: any) {
+    console.error('Admin status error:', err);
+    return res.status(500).json({ success: false, error: 'অ্যাডমিন স্ট্যাটাস যাচাই করতে ব্যর্থ' });
+  }
+});
+
+// Admin Login (Password Only via ADMIN_PASSWORD Secret): POST /api/admin/login
+app.post('/api/admin/login', async (req, res) => {
+  try {
+    if (!ENV_ADMIN_PASSWORD) {
+      return res.status(503).json({
+        success: false,
+        error:
+          'সার্ভারে ADMIN_PASSWORD সেট করা নেই। অনুগ্রহ করে Cloudflare Secret বা Environment-এ ADMIN_PASSWORD যুক্ত করুন।',
+      });
+    }
+
+    const rawPassword = req.body?.password;
+    const trimmedPassword = typeof rawPassword === 'string' ? rawPassword.trim() : '';
+
+    if (!trimmedPassword) {
+      return res.status(400).json({ success: false, error: 'পাসওয়ার্ড প্রদান করুন' });
+    }
+
+    if (trimmedPassword !== ENV_ADMIN_PASSWORD) {
+      return res.status(401).json({ success: false, error: 'অ্যাডমিন পাসওয়ার্ড সঠিক নয়' });
+    }
+
+    const expiresAtMs = Date.now() + 7 * 24 * 3600 * 1000;
+    const token = await signAdminToken(ENV_ADMIN_PASSWORD, expiresAtMs);
+
+    return res.json({
+      success: true,
+      token,
+      admin: {
+        id: 'admin-secret',
+        name: 'MD Robin Mia',
+        phone: '',
+        role: 'admin',
+      },
+    });
+  } catch (err: any) {
+    console.error('Admin login error:', err);
+    return res.status(500).json({ success: false, error: 'অ্যাডমিন লগইন ব্যর্থ হয়েছে' });
+  }
+});
+
+// Admin Logout: POST /api/admin/logout
+app.post('/api/admin/logout', (_req, res) => {
+  return res.json({ success: true, message: 'লগআউট সফল হয়েছে' });
+});
+
+// Admin Overview Data: GET /api/admin/overview
+app.get('/api/admin/overview', async (req, res) => {
+  try {
+    const admin = await resolveAdminSession(req);
+    if (!admin) {
+      return res.status(401).json({ success: false, error: 'অননুমোদিত প্রবেশাধিকার। অনুগ্রহ করে অ্যাডমিন লগইন করুন।' });
+    }
+
+    let shops: any[] = [];
+    let products: any[] = [];
+    let users: any[] = [];
+    let reviewsList: any[] = [];
+    let remoteConnected = false;
+
+    if (hasCloudflareCredentials && !remoteD1AuthDisabled) {
+      const rShops = await queryCloudflareD1('SELECT * FROM shops ORDER BY created_at DESC');
+      if (rShops) {
+        remoteConnected = true;
+        shops = rShops.map((row: any) => ({
+          id: row.id,
+          nameBn: row.name_bn,
+          categoryId: row.category_id,
+          categoryBn: row.category_bn,
+          addressBn: row.address_bn,
+          area: row.area,
+          rating: Number(row.rating) || 5.0,
+          reviewCount: Number(row.review_count) || 0,
+          isOpen: Boolean(row.is_open),
+          timingBn: row.timing_bn || '',
+          phone: row.phone,
+          coverImage: row.cover_image || '',
+          deliveryAvailable: Boolean(row.delivery_available),
+          minOrder: Number(row.min_order) || 0,
+          ownerName: row.owner_name || '',
+          ownerPhone: row.owner_phone || '',
+          createdAt: row.created_at || '',
+        }));
+
+        const rProds = await queryCloudflareD1(
+          `SELECT p.*, s.name_bn as shop_name, s.area as shop_area
+           FROM products p
+           LEFT JOIN shops s ON p.shop_id = s.id
+           ORDER BY p.created_at DESC`
+        );
+        products = (rProds || []).map((row: any) => ({
+          id: row.id,
+          shopId: row.shop_id,
+          nameBn: row.name_bn,
+          category: row.category_id || 'grocery',
+          price: Number(row.price),
+          unit: row.unit || 'কেজি',
+          inStock: Boolean(row.in_stock),
+          isAvailable: Boolean(row.in_stock),
+          stockStatus: row.in_stock ? 'ইন স্টক' : 'স্টক শেষ',
+          imageUrl: row.image_url || '',
+          shopName: row.shop_name || '',
+          shopArea: row.shop_area || '',
+        }));
+
+        const rUsers = await queryCloudflareD1(
+          'SELECT id, name, phone, role, created_at FROM users ORDER BY created_at DESC'
+        );
+        users = (rUsers || []).map((u: any) => ({
+          id: u.id,
+          name: u.name,
+          phone: u.phone,
+          role: u.role || 'customer',
+          createdAt: u.created_at || '',
+        }));
+
+        const rReviews = await queryCloudflareD1(
+          `SELECT r.*, s.name_bn as shop_name
+           FROM reviews r
+           LEFT JOIN shops s ON r.shop_id = s.id
+           ORDER BY r.created_at DESC`
+        );
+        reviewsList = (rReviews || []).map((r: any) => ({
+          id: r.id,
+          shopId: r.shop_id,
+          shopName: r.shop_name || '',
+          customerName: r.customer_name || 'সম্মানিত ক্রেতা',
+          rating: Number(r.rating) || 5,
+          comment: r.comment || '',
+          dateBn: r.date_bn || '',
+        }));
+      }
+    }
+
+    if (!remoteConnected) {
+      const data = getLocalD1Data();
+      shops = data.shops || [];
+      products = data.products || [];
+      users = (data.users || []).map((u: any) => ({
+        id: u.id,
+        name: u.name,
+        phone: u.phone,
+        role: u.role || 'customer',
+        createdAt: u.created_at || '',
+      }));
+
+      const shopMap = new Map<string, string>(
+        shops.map((s: any) => [s.id, s.nameBn || ''])
+      );
+      const rawReviewsObj = data.reviews || {};
+      reviewsList = Object.entries(rawReviewsObj).flatMap(([shopId, arr]: [string, any]) =>
+        Array.isArray(arr)
+          ? arr.map((r: any) => ({
+              ...r,
+              shopId: r.shopId || shopId,
+              shopName: shopMap.get(shopId) || '',
+            }))
+          : []
+      );
+    }
+
+    const stats = {
+      totalShops: shops.length,
+      openShops: shops.filter((s: any) => s.isOpen !== false).length,
+      totalProducts: products.length,
+      inStockProducts: products.filter((p: any) => p.inStock !== false && p.isAvailable !== false).length,
+      totalUsers: users.length,
+      merchantCount: users.filter((u: any) => u.role === 'merchant').length,
+      totalReviews: reviewsList.length,
+    };
+
+    return res.json({
+      success: true,
+      stats,
+      shops,
+      products,
+      users,
+      reviews: reviewsList,
+      dbMode: remoteConnected ? 'cloudflare_d1_api' : 'local_persistent_d1',
+    });
+  } catch (err: any) {
+    console.error('Admin overview error:', err);
+    return res.status(500).json({ success: false, error: 'অ্যাডমিন ডেটা লোড করতে ব্যর্থ হয়েছে' });
+  }
+});
+
+// Admin Update Shop: PUT /api/admin/shops/:id
+app.put('/api/admin/shops/:id', async (req, res) => {
+  const admin = await resolveAdminSession(req);
+  if (!admin) return res.status(401).json({ success: false, error: 'অননুমোদিত প্রবেশাধিকার' });
+
+  const shopId = req.params.id;
+  const updatedData = req.body || {};
+
+  if (hasCloudflareCredentials && !remoteD1AuthDisabled) {
+    await queryCloudflareD1(
+      `UPDATE shops SET
+        name_bn = COALESCE(?, name_bn),
+        phone = COALESCE(?, phone),
+        address_bn = COALESCE(?, address_bn),
+        delivery_available = COALESCE(?, delivery_available),
+        is_open = COALESCE(?, is_open)
+      WHERE id = ?`,
+      [
+        updatedData.nameBn ?? null,
+        updatedData.phone ?? null,
+        updatedData.addressBn ?? null,
+        updatedData.deliveryAvailable !== undefined ? (updatedData.deliveryAvailable ? 1 : 0) : null,
+        updatedData.isOpen !== undefined ? (updatedData.isOpen ? 1 : 0) : null,
+        shopId,
+      ]
+    );
+  }
+
+  const data = getLocalD1Data();
+  data.shops = (data.shops || []).map((s: any) => (s.id === shopId ? { ...s, ...updatedData } : s));
+  saveLocalD1Data(data);
+
+  return res.json({ success: true, id: shopId });
+});
+
+// Admin Delete Shop: DELETE /api/admin/shops/:id
+app.delete('/api/admin/shops/:id', async (req, res) => {
+  const admin = await resolveAdminSession(req);
+  if (!admin) return res.status(401).json({ success: false, error: 'অননুমোদিত প্রবেশাধিকার' });
+
+  const shopId = req.params.id;
+  if (hasCloudflareCredentials && !remoteD1AuthDisabled) {
+    await queryCloudflareD1('DELETE FROM products WHERE shop_id = ?', [shopId]);
+    await queryCloudflareD1('DELETE FROM reviews WHERE shop_id = ?', [shopId]);
+    await queryCloudflareD1('DELETE FROM shops WHERE id = ?', [shopId]);
+  }
+
+  const data = getLocalD1Data();
+  data.shops = (data.shops || []).filter((s: any) => s.id !== shopId);
+  data.products = (data.products || []).filter((p: any) => p.shopId !== shopId);
+  if (data.reviews) delete data.reviews[shopId];
+  saveLocalD1Data(data);
+
+  return res.json({ success: true, id: shopId });
+});
+
+// Admin Update Product: PUT /api/admin/products/:id
+app.put('/api/admin/products/:id', async (req, res) => {
+  const admin = await resolveAdminSession(req);
+  if (!admin) return res.status(401).json({ success: false, error: 'অননুমোদিত প্রবেশাধিকার' });
+
+  const prodId = req.params.id;
+  const body = req.body || {};
+
+  if (hasCloudflareCredentials && !remoteD1AuthDisabled) {
+    await queryCloudflareD1(
+      `UPDATE products SET
+        name_bn = COALESCE(?, name_bn),
+        price = COALESCE(?, price),
+        in_stock = COALESCE(?, in_stock)
+      WHERE id = ?`,
+      [
+        body.nameBn ?? null,
+        body.price !== undefined ? Number(body.price) : null,
+        body.inStock !== undefined ? (body.inStock ? 1 : 0) : null,
+        prodId,
+      ]
+    );
+  }
+
+  const data = getLocalD1Data();
+  data.products = (data.products || []).map((p: any) => {
+    if (p.id !== prodId) return p;
+    const nextInStock = body.inStock !== undefined ? Boolean(body.inStock) : p.inStock;
+    return {
+      ...p,
+      ...body,
+      inStock: nextInStock,
+      isAvailable: nextInStock,
+      stockStatus: nextInStock ? 'ইন স্টক' : 'স্টক শেষ',
+    };
+  });
+  saveLocalD1Data(data);
+
+  return res.json({ success: true, id: prodId });
+});
+
+// Admin Delete Product: DELETE /api/admin/products/:id
+app.delete('/api/admin/products/:id', async (req, res) => {
+  const admin = await resolveAdminSession(req);
+  if (!admin) return res.status(401).json({ success: false, error: 'অননুমোদিত প্রবেশাধিকার' });
+
+  const prodId = req.params.id;
+  if (hasCloudflareCredentials && !remoteD1AuthDisabled) {
+    await queryCloudflareD1('DELETE FROM products WHERE id = ?', [prodId]);
+  }
+
+  const data = getLocalD1Data();
+  data.products = (data.products || []).filter((p: any) => p.id !== prodId);
+  saveLocalD1Data(data);
+
+  return res.json({ success: true, id: prodId });
+});
+
+// Admin Update User Role: PUT /api/admin/users/:id
+app.put('/api/admin/users/:id', async (req, res) => {
+  const admin = await resolveAdminSession(req);
+  if (!admin) return res.status(401).json({ success: false, error: 'অননুমোদিত প্রবেশাধিকার' });
+
+  const userId = req.params.id;
+  if (userId === admin.id) {
+    return res.status(400).json({ success: false, error: 'নিজের অ্যাডমিন রোল পরিবর্তন করা যাবে না' });
+  }
+
+  const role = req.body?.role === 'merchant' ? 'merchant' : 'customer';
+
+  if (hasCloudflareCredentials && !remoteD1AuthDisabled) {
+    await queryCloudflareD1("UPDATE users SET role = ? WHERE id = ? AND role != 'admin'", [role, userId]);
+  }
+
+  const data = getLocalD1Data();
+  data.users = (data.users || []).map((u: any) =>
+    u.id === userId && u.role !== 'admin' ? { ...u, role } : u
+  );
+  saveLocalD1Data(data);
+
+  return res.json({ success: true, id: userId, role });
+});
+
+// Admin Delete User: DELETE /api/admin/users/:id
+app.delete('/api/admin/users/:id', async (req, res) => {
+  const admin = await resolveAdminSession(req);
+  if (!admin) return res.status(401).json({ success: false, error: 'অননুমোদিত প্রবেশাধিকার' });
+
+  const userId = req.params.id;
+  if (userId === admin.id) {
+    return res.status(400).json({ success: false, error: 'নিজের অ্যাডমিন অ্যাকাউন্ট মুছে ফেলা যাবে না' });
+  }
+
+  if (hasCloudflareCredentials && !remoteD1AuthDisabled) {
+    await queryCloudflareD1('DELETE FROM sessions WHERE user_id = ?', [userId]);
+    await queryCloudflareD1("DELETE FROM users WHERE id = ? AND role != 'admin'", [userId]);
+  }
+
+  const data = getLocalD1Data();
+  data.users = (data.users || []).filter((u: any) => !(u.id === userId && u.role !== 'admin'));
+  data.sessions = (data.sessions || []).filter((s: any) => s.user_id !== userId);
+  saveLocalD1Data(data);
+
+  return res.json({ success: true, id: userId });
+});
+
+// Admin Delete Review: DELETE /api/admin/reviews/:shopId/:reviewId
+app.delete('/api/admin/reviews/:shopId/:reviewId', async (req, res) => {
+  const admin = await resolveAdminSession(req);
+  if (!admin) return res.status(401).json({ success: false, error: 'অননুমোদিত প্রবেশাধিকার' });
+
+  const { shopId, reviewId } = req.params;
+  if (hasCloudflareCredentials && !remoteD1AuthDisabled) {
+    await queryCloudflareD1('DELETE FROM reviews WHERE id = ? AND shop_id = ?', [reviewId, shopId]);
+    const stats = await queryCloudflareD1(
+      'SELECT COUNT(*) as count, AVG(rating) as avg_rating FROM reviews WHERE shop_id = ?',
+      [shopId]
+    );
+    if (stats && stats[0]) {
+      await queryCloudflareD1(
+        'UPDATE shops SET review_count = ?, rating = ROUND(?, 1) WHERE id = ?',
+        [Number(stats[0].count) || 0, Number(stats[0].avg_rating) || 5.0, shopId]
+      );
+    }
+  }
+
+  const data = getLocalD1Data();
+  if (data.reviews && Array.isArray(data.reviews[shopId])) {
+    data.reviews[shopId] = data.reviews[shopId].filter((r: any) => r.id !== reviewId);
+    const remaining = data.reviews[shopId];
+    const avg =
+      remaining.length > 0
+        ? Math.round((remaining.reduce((acc: number, r: any) => acc + (Number(r.rating) || 5), 0) / remaining.length) * 10) / 10
+        : 5.0;
+    data.shops = (data.shops || []).map((s: any) =>
+      s.id === shopId ? { ...s, reviewCount: remaining.length, rating: avg } : s
+    );
+  }
+  saveLocalD1Data(data);
+
+  return res.json({ success: true, id: reviewId });
 });
 
 // Return JSON 404 for unknown /api/* routes so they never return HTML

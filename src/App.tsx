@@ -26,6 +26,7 @@ import { ProductsPage } from './components/ProductsPage';
 import { PriceComparePage } from './components/PriceComparePage';
 import { BottomNavBar, AppView } from './components/BottomNavBar';
 import { FloatingLocationButton } from './components/FloatingLocationButton';
+import { AdminPage } from './components/AdminPage';
 
 import { SHOPS } from './data/mockData';
 import { d1Service } from './services/d1Service';
@@ -50,6 +51,26 @@ export default function App() {
 
   // View state: 'home' | 'shops' | 'products' | 'price-compare' | 'dashboard'
   const [currentView, setCurrentView] = useState<AppView>('home');
+
+  // Exclusive /admin URL routing (accessible only directly via /admin)
+  const [isAdminRoute, setIsAdminRoute] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    return window.location.pathname.replace(/\/+$/, '') === '/admin';
+  });
+
+  React.useEffect(() => {
+    const onPopState = () => {
+      setIsAdminRoute(window.location.pathname.replace(/\/+$/, '') === '/admin');
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
+
+  React.useEffect(() => {
+    document.title = isAdminRoute
+      ? 'Admin Console — Pasher Shop'
+      : 'Pasher Shop – আপনার পাশের দোকান, এখন অনলাইনে';
+  }, [isAdminRoute]);
 
   // Ensure light mode only across the entire app
   React.useEffect(() => {
@@ -127,6 +148,14 @@ export default function App() {
     });
   }, []);
 
+  const refreshShopsFromD1 = React.useCallback(() => {
+    d1Service.getAllShops().then((shopsFromD1) => {
+      if (Array.isArray(shopsFromD1)) {
+        setAllShops(shopsFromD1);
+      }
+    });
+  }, []);
+
   // Sync session and data with Cloudflare D1 SQL database (DB: pasher-shop-db)
   React.useEffect(() => {
     // Check active session
@@ -138,14 +167,9 @@ export default function App() {
       }
     });
 
-    d1Service.getAllShops().then((shopsFromD1) => {
-      if (shopsFromD1 && shopsFromD1.length > 0) {
-        setAllShops(shopsFromD1);
-      }
-    });
-
+    refreshShopsFromD1();
     refreshProductsFromD1();
-  }, [refreshProductsFromD1]);
+  }, [refreshProductsFromD1, refreshShopsFromD1]);
 
   const handleLogout = async () => {
     await d1Service.logout();
@@ -396,6 +420,25 @@ export default function App() {
       setActiveShop(found);
     }
   };
+
+  const handleExitAdmin = () => {
+    window.history.pushState({}, '', '/');
+    setIsAdminRoute(false);
+    refreshShopsFromD1();
+    refreshProductsFromD1();
+  };
+
+  if (isAdminRoute) {
+    return (
+      <AdminPage
+        onExitToSite={handleExitAdmin}
+        onDataChanged={() => {
+          refreshShopsFromD1();
+          refreshProductsFromD1();
+        }}
+      />
+    );
+  }
 
   return (
     <div className="relative min-h-screen w-full max-w-full overflow-x-hidden flex flex-col bg-gradient-to-b from-[#EAF2FF] via-[#F8FAFC] to-[#EEF4FF] text-[#171717] font-sans antialiased selection:bg-[#FF7900]/20 selection:text-[#0B4A8A] pb-20 sm:pb-24">

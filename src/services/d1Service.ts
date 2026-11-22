@@ -559,4 +559,228 @@ export function normalizePhoneNumber(rawPhone: string): string {
   return clean;
 }
 
+// ----------------------------------------------------
+// Admin Console Service (/api/admin/*)
+// ----------------------------------------------------
+export interface AdminProfile {
+  id: string;
+  name: string;
+  phone: string;
+  role: 'admin';
+}
+
+export interface AdminUserItem {
+  id: string;
+  name: string;
+  phone: string;
+  role: 'customer' | 'merchant' | 'admin';
+  createdAt?: string;
+}
+
+export interface AdminReviewItem {
+  id: string;
+  shopId: string;
+  shopName?: string;
+  customerName: string;
+  rating: number;
+  comment: string;
+  dateBn: string;
+}
+
+export interface AdminOverviewData {
+  stats: {
+    totalShops: number;
+    openShops: number;
+    totalProducts: number;
+    inStockProducts: number;
+    totalUsers: number;
+    merchantCount: number;
+    totalReviews: number;
+  };
+  shops: Shop[];
+  products: ProductItem[];
+  users: AdminUserItem[];
+  reviews: AdminReviewItem[];
+  dbMode: string;
+}
+
+const ADMIN_TOKEN_KEY = 'pasher_admin_token';
+
+export const adminService = {
+  getToken(): string | null {
+    try {
+      return localStorage.getItem(ADMIN_TOKEN_KEY);
+    } catch {
+      return null;
+    }
+  },
+
+  setToken(token: string) {
+    try {
+      localStorage.setItem(ADMIN_TOKEN_KEY, token);
+    } catch {}
+  },
+
+  clearToken() {
+    try {
+      localStorage.removeItem(ADMIN_TOKEN_KEY);
+    } catch {}
+  },
+
+  async getStatus(): Promise<{
+    passwordConfigured: boolean;
+    authenticated: boolean;
+    admin: AdminProfile | null;
+  }> {
+    const token = this.getToken();
+    const res = await fetch('/api/admin/status', {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    const data = await res.json();
+    if (!data.authenticated && token) {
+      this.clearToken();
+    }
+    return {
+      passwordConfigured: Boolean(data.passwordConfigured),
+      authenticated: Boolean(data.authenticated),
+      admin: data.admin || null,
+    };
+  },
+
+  async loginAdmin(
+    password: string
+  ): Promise<{ success: boolean; admin?: AdminProfile; error?: string }> {
+    try {
+      const res = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success && data.token) {
+        this.setToken(data.token);
+        return { success: true, admin: data.admin };
+      }
+      return { success: false, error: data.error || 'অ্যাডমিন পাসওয়ার্ড সঠিক নয়' };
+    } catch {
+      return { success: false, error: 'সার্ভারের সাথে সংযোগ ব্যর্থ হয়েছে' };
+    }
+  },
+
+  async logout(): Promise<void> {
+    const token = this.getToken();
+    this.clearToken();
+    if (token) {
+      try {
+        await fetch('/api/admin/logout', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      } catch {}
+    }
+  },
+
+  async getOverview(): Promise<{ success: boolean; data?: AdminOverviewData; error?: string }> {
+    const token = this.getToken();
+    if (!token) return { success: false, error: 'অননুমোদিত প্রবেশাধিকার' };
+    try {
+      const res = await fetch('/api/admin/overview', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const json = await res.json();
+      if (res.ok && json.success) {
+        return { success: true, data: json };
+      }
+      if (res.status === 401) {
+        this.clearToken();
+      }
+      return { success: false, error: json.error || 'তথ্য লোড করা যায়নি' };
+    } catch {
+      return { success: false, error: 'সার্ভারের সাথে সংযোগ ব্যর্থ হয়েছে' };
+    }
+  },
+
+  async updateShop(id: string, body: Partial<Shop>): Promise<boolean> {
+    const token = this.getToken();
+    if (!token) return false;
+    const res = await fetch(`/api/admin/shops/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(body),
+    });
+    return res.ok;
+  },
+
+  async deleteShop(id: string): Promise<boolean> {
+    const token = this.getToken();
+    if (!token) return false;
+    const res = await fetch(`/api/admin/shops/${id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return res.ok;
+  },
+
+  async updateProduct(id: string, body: Partial<ProductItem>): Promise<boolean> {
+    const token = this.getToken();
+    if (!token) return false;
+    const res = await fetch(`/api/admin/products/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(body),
+    });
+    return res.ok;
+  },
+
+  async deleteProduct(id: string): Promise<boolean> {
+    const token = this.getToken();
+    if (!token) return false;
+    const res = await fetch(`/api/admin/products/${id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return res.ok;
+  },
+
+  async updateUserRole(id: string, role: 'customer' | 'merchant'): Promise<boolean> {
+    const token = this.getToken();
+    if (!token) return false;
+    const res = await fetch(`/api/admin/users/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ role }),
+    });
+    return res.ok;
+  },
+
+  async deleteUser(id: string): Promise<boolean> {
+    const token = this.getToken();
+    if (!token) return false;
+    const res = await fetch(`/api/admin/users/${id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return res.ok;
+  },
+
+  async deleteReview(shopId: string, reviewId: string): Promise<boolean> {
+    const token = this.getToken();
+    if (!token) return false;
+    const res = await fetch(`/api/admin/reviews/${shopId}/${reviewId}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return res.ok;
+  },
+};
+
 

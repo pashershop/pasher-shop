@@ -20,6 +20,7 @@ export interface D1Database {
 
 export interface Env {
   DB: D1Database;
+  ADMIN_PASSWORD?: string;
   ASSETS?: {
     fetch: (request: Request) => Promise<Response>;
   };
@@ -73,6 +74,41 @@ function generateToken(): string {
     .map((b) => b.toString(16).padStart(2, '0'))
     .join('');
   return `pst_${Date.now()}_${hex}`;
+}
+
+// Stateless HMAC-SHA256 admin token signed by Cloudflare Secret ADMIN_PASSWORD
+async function signAdminToken(secret: string, expiresAtMs: number): Promise<string> {
+  const enc = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    'raw',
+    enc.encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  );
+  const payload = `pasher_admin:${expiresAtMs}`;
+  const sigBuf = await crypto.subtle.sign('HMAC', key, enc.encode(payload));
+  const sigHex = Array.from(new Uint8Array(sigBuf))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+  return `admtok_${expiresAtMs}_${sigHex}`;
+}
+
+async function verifyAdminToken(token: string, secret: string): Promise<boolean> {
+  if (!token || !secret || !token.startsWith('admtok_')) return false;
+  const parts = token.split('_');
+  if (parts.length !== 3) return false;
+  const expiresAtMs = Number(parts[1]);
+  const sigHex = parts[2];
+  if (!Number.isFinite(expiresAtMs) || Date.now() > expiresAtMs) return false;
+  const expected = await signAdminToken(secret, expiresAtMs);
+  const expectedHex = expected.split('_')[2] || '';
+  if (sigHex.length !== expectedHex.length) return false;
+  let diff = 0;
+  for (let i = 0; i < sigHex.length; i++) {
+    diff |= sigHex.charCodeAt(i) ^ expectedHex.charCodeAt(i);
+  }
+  return diff === 0;
 }
 
 // Phone normalizer (converts Bengali numerals & handles +880/880 prefixes)
@@ -170,7 +206,12 @@ export default {
     // Only intercept /api/* endpoints in the worker
     if (!pathname.startsWith('/api/')) {
       if (env.ASSETS) {
-        return await env.ASSETS.fetch(request);
+        const assetRes = await env.ASSETS.fetch(request);
+        if (assetRes.status === 404 && !pathname.includes('.')) {
+          const spaUrl = new URL('/', request.url);
+          return await env.ASSETS.fetch(new Request(spaUrl.toString(), request));
+        }
+        return assetRes;
       }
       return new Response('Not Found', { status: 404 });
     }
@@ -916,6 +957,264 @@ export default {
             comment,
             dateBn,
           }, 201);
+        }
+      }
+
+      // ---------------------------------------------------------
+      // 13. Admin Console APIs (/api/admin/*) — Cloudflare Secret ADMIN_PASSWORD
+      // ---------------------------------------------------------
+      if (pathname.startsWith('/api/admin/')) {
+        const envAdminPassword =
+          typeof env.ADMIN_PASSWORD === 'string' ? env.ADMIN_PASSWORD.trim() : '';
+
+        const resolveAdmin = async () => {
+          if (!envAdminPassword) return null;
+          const authHeader = request.headers.get('Authorization') || '';
+          const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+          const valid = await verifyAdminToken(token, envAdminPassword);
+          if (!valid) return null;
+          return {
+            id: 'admin-secret',
+            name: 'MD Robin Mia',
+            phone: '',
+            role: 'admin' as const,
+          };
+        };
+
+        if (pathname === '/api/admin/status' && method === 'GET') {
+          const admin = await resolveAdmin();
+          return jsonResponse({
+            success: true,
+            passwordConfigured: Boolean(envAdminPassword),
+            authenticated: Boolean(admin),
+            admin: admin || null,
+          });
+        }
+
+        if (pathname === '/api/admin/login' && method === 'POST') {
+          if (!envAdminPassword) {
+            return errorResponse(
+              'Cloudflare Secret-এ ADMIN_PASSWORD সেট করা নেই। অনুগ্রহ করে Worker Settings -> Variables and Secrets-এ ADMIN_PASSWORD যুক্ত করুন।',
+              503
+            );
+          }
+
+          const body = ((await request.json().catch(() => ({}))) || {}) as any;
+          const password = typeof body.password === 'string' ? body.password.trim() : '';
+          if (!password) {
+            return errorResponse('পাসওয়ার্ড প্রদান করুন', 400);
+          }
+
+          if (password !== envAdminPassword) {
+            return errorResponse('অ্যাডমিন পাসওয়ার্ড সঠিক নয়', 401);
+          }
+
+          const expiresAtMs = Date.now() + 7 * 24 * 3600 * 1000;
+          const token = await signAdminToken(envAdminPassword, expiresAtMs);
+
+          return jsonResponse({
+            success: true,
+            token,
+            admin: {
+              id: 'admin-secret',
+              name: 'MD Robin Mia',
+              phone: '',
+              role: 'admin',
+            },
+          });
+        }
+
+        if (pathname === '/api/admin/logout' && method === 'POST') {
+          return jsonResponse({ success: true, message: 'লগআউট সফল হয়েছে' });
+        }
+
+        const admin = await resolveAdmin();
+        if (!admin) {
+          return errorResponse('অননুমোদিত প্রবেশাধিকার। অনুগ্রহ করে অ্যাডমিন লগইন করুন।', 401);
+        }
+
+        if (pathname === '/api/admin/overview' && method === 'GET') {
+          const { results: rShops } = await env.DB.prepare('SELECT * FROM shops ORDER BY created_at DESC').all<any>();
+          const shops = (rShops || []).map((row: any) => ({
+            id: row.id,
+            nameBn: row.name_bn,
+            categoryId: row.category_id,
+            categoryBn: row.category_bn,
+            addressBn: row.address_bn,
+            area: row.area,
+            rating: Number(row.rating) || 5.0,
+            reviewCount: Number(row.review_count) || 0,
+            isOpen: Boolean(row.is_open),
+            timingBn: row.timing_bn || '',
+            phone: row.phone,
+            coverImage: row.cover_image || '',
+            deliveryAvailable: Boolean(row.delivery_available),
+            minOrder: Number(row.min_order) || 0,
+            ownerName: row.owner_name || '',
+            ownerPhone: row.owner_phone || '',
+            createdAt: row.created_at || '',
+          }));
+
+          const { results: rProds } = await env.DB.prepare(
+            `SELECT p.*, s.name_bn as shop_name, s.area as shop_area
+             FROM products p
+             LEFT JOIN shops s ON p.shop_id = s.id
+             ORDER BY p.created_at DESC`
+          ).all<any>();
+          const products = (rProds || []).map((row: any) => ({
+            id: row.id,
+            shopId: row.shop_id,
+            nameBn: row.name_bn,
+            category: row.category_id || 'grocery',
+            price: Number(row.price),
+            unit: row.unit || 'কেজি',
+            inStock: Boolean(row.in_stock),
+            isAvailable: Boolean(row.in_stock),
+            stockStatus: row.in_stock ? 'ইন স্টক' : 'স্টক শেষ',
+            imageUrl: row.image_url || '',
+            shopName: row.shop_name || '',
+            shopArea: row.shop_area || '',
+          }));
+
+          const { results: rUsers } = await env.DB.prepare(
+            'SELECT id, name, phone, role, created_at FROM users ORDER BY created_at DESC'
+          ).all<any>();
+          const users = (rUsers || []).map((u: any) => ({
+            id: u.id,
+            name: u.name,
+            phone: u.phone,
+            role: u.role || 'customer',
+            createdAt: u.created_at || '',
+          }));
+
+          const { results: rReviews } = await env.DB.prepare(
+            `SELECT r.*, s.name_bn as shop_name
+             FROM reviews r
+             LEFT JOIN shops s ON r.shop_id = s.id
+             ORDER BY r.created_at DESC`
+          ).all<any>();
+          const reviews = (rReviews || []).map((r: any) => ({
+            id: r.id,
+            shopId: r.shop_id,
+            shopName: r.shop_name || '',
+            customerName: r.customer_name || 'সম্মানিত ক্রেতা',
+            rating: Number(r.rating) || 5,
+            comment: r.comment || '',
+            dateBn: r.date_bn || '',
+          }));
+
+          return jsonResponse({
+            success: true,
+            stats: {
+              totalShops: shops.length,
+              openShops: shops.filter((s: any) => s.isOpen !== false).length,
+              totalProducts: products.length,
+              inStockProducts: products.filter((p: any) => p.inStock !== false).length,
+              totalUsers: users.length,
+              merchantCount: users.filter((u: any) => u.role === 'merchant').length,
+              totalReviews: reviews.length,
+            },
+            shops,
+            products,
+            users,
+            reviews,
+            dbMode: 'cloudflare_d1_worker',
+          });
+        }
+
+        const adminShopMatch = pathname.match(/^\/api\/admin\/shops\/([^/]+)$/);
+        if (adminShopMatch && method === 'PUT') {
+          const shopId = adminShopMatch[1];
+          const body = (await request.json().catch(() => ({}))) as any;
+          await env.DB.prepare(
+            `UPDATE shops SET
+              name_bn = COALESCE(?, name_bn),
+              phone = COALESCE(?, phone),
+              address_bn = COALESCE(?, address_bn),
+              delivery_available = COALESCE(?, delivery_available),
+              is_open = COALESCE(?, is_open)
+            WHERE id = ?`
+          )
+            .bind(
+              body.nameBn ?? null,
+              body.phone ?? null,
+              body.addressBn ?? null,
+              body.deliveryAvailable !== undefined ? (body.deliveryAvailable ? 1 : 0) : null,
+              body.isOpen !== undefined ? (body.isOpen ? 1 : 0) : null,
+              shopId
+            )
+            .run();
+          return jsonResponse({ success: true, id: shopId });
+        }
+
+        if (adminShopMatch && method === 'DELETE') {
+          const shopId = adminShopMatch[1];
+          await env.DB.prepare('DELETE FROM products WHERE shop_id = ?').bind(shopId).run();
+          await env.DB.prepare('DELETE FROM reviews WHERE shop_id = ?').bind(shopId).run();
+          await env.DB.prepare('DELETE FROM shops WHERE id = ?').bind(shopId).run();
+          return jsonResponse({ success: true, id: shopId });
+        }
+
+        const adminProdMatch = pathname.match(/^\/api\/admin\/products\/([^/]+)$/);
+        if (adminProdMatch && method === 'PUT') {
+          const prodId = adminProdMatch[1];
+          const body = (await request.json().catch(() => ({}))) as any;
+          await env.DB.prepare(
+            `UPDATE products SET
+              name_bn = COALESCE(?, name_bn),
+              price = COALESCE(?, price),
+              in_stock = COALESCE(?, in_stock)
+            WHERE id = ?`
+          )
+            .bind(
+              body.nameBn ?? null,
+              body.price !== undefined ? Number(body.price) : null,
+              body.inStock !== undefined ? (body.inStock ? 1 : 0) : null,
+              prodId
+            )
+            .run();
+          return jsonResponse({ success: true, id: prodId });
+        }
+
+        if (adminProdMatch && method === 'DELETE') {
+          const prodId = adminProdMatch[1];
+          await env.DB.prepare('DELETE FROM products WHERE id = ?').bind(prodId).run();
+          return jsonResponse({ success: true, id: prodId });
+        }
+
+        const adminUserMatch = pathname.match(/^\/api\/admin\/users\/([^/]+)$/);
+        if (adminUserMatch && method === 'PUT') {
+          const userId = adminUserMatch[1];
+          if (userId === admin.id) return errorResponse('নিজের অ্যাডমিন রোল পরিবর্তন করা যাবে না', 400);
+          const body = (await request.json().catch(() => ({}))) as any;
+          const role = body.role === 'merchant' ? 'merchant' : 'customer';
+          await env.DB.prepare("UPDATE users SET role = ? WHERE id = ? AND role != 'admin'").bind(role, userId).run();
+          return jsonResponse({ success: true, id: userId, role });
+        }
+
+        if (adminUserMatch && method === 'DELETE') {
+          const userId = adminUserMatch[1];
+          if (userId === admin.id) return errorResponse('নিজের অ্যাডমিন অ্যাকাউন্ট মুছে ফেলা যাবে না', 400);
+          await env.DB.prepare('DELETE FROM sessions WHERE user_id = ?').bind(userId).run();
+          await env.DB.prepare("DELETE FROM users WHERE id = ? AND role != 'admin'").bind(userId).run();
+          return jsonResponse({ success: true, id: userId });
+        }
+
+        const adminRevMatch = pathname.match(/^\/api\/admin\/reviews\/([^/]+)\/([^/]+)$/);
+        if (adminRevMatch && method === 'DELETE') {
+          const [, shopId, reviewId] = adminRevMatch;
+          await env.DB.prepare('DELETE FROM reviews WHERE id = ? AND shop_id = ?').bind(reviewId, shopId).run();
+          const avgRes = await env.DB.prepare(
+            'SELECT COUNT(*) as count, AVG(rating) as avg_rating FROM reviews WHERE shop_id = ?'
+          )
+            .bind(shopId)
+            .first<any>();
+          if (avgRes) {
+            await env.DB.prepare('UPDATE shops SET review_count = ?, rating = ROUND(?, 1) WHERE id = ?')
+              .bind(avgRes.count || 0, avgRes.avg_rating || 5.0, shopId)
+              .run();
+          }
+          return jsonResponse({ success: true, id: reviewId });
         }
       }
 
