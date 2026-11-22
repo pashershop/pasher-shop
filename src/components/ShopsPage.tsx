@@ -52,18 +52,18 @@ export const ShopsPage: React.FC<ShopsPageProps> = ({
   });
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 pb-28 pt-4 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="min-h-screen bg-transparent text-slate-900 pb-28 pt-4 px-4 sm:px-6 lg:px-8">
+      <div className="w-full space-y-6">
         
-        {/* Page Title Row */}
-        <div className="flex flex-wrap items-center justify-between gap-3 pb-2">
+        {/* Page Title Banner matching Header Gradient */}
+        <div className="flex flex-wrap items-center justify-between gap-3 bg-gradient-to-r from-[#073463] via-[#0B4A8A] to-[#1262B5] text-white rounded-3xl p-5 sm:p-6 shadow-md border border-white/15">
           <div>
-            <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2">
-              <Store className="w-5 h-5 text-[#0B4A8A] dark:text-cyan-400" />
+            <h1 className="text-xl sm:text-2xl font-black text-white flex items-center gap-2">
+              <Store className="w-5 h-5 text-[#FF7900]" />
               <span>আপনার আশেপাশের দোকানসমূহ</span>
             </h1>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              বর্তমান এলাকা: <span className="font-bold text-[#0B4A8A] dark:text-cyan-400">{currentArea}</span>
+            <p className="text-xs text-blue-100 mt-1">
+              বর্তমান এলাকা: <span className="font-bold text-white">{currentArea}</span>
               {isAutoDetected && ' (অটো জিপিএস সক্রিয়)'}
             </p>
           </div>
@@ -71,14 +71,14 @@ export const ShopsPage: React.FC<ShopsPageProps> = ({
           <div className="flex items-center gap-2">
             <button
               onClick={onDetectLocation}
-              className="px-3 py-1.5 rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+              className="px-3 py-1.5 rounded-full bg-white/15 hover:bg-white/25 text-white border border-white/20 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
             >
               <Navigation className="w-3.5 h-3.5 text-[#FF7900]" />
               <span>রিফ্রেশ</span>
             </button>
             <button
               onClick={onOpenAddShopModal}
-              className="px-3.5 py-1.5 rounded-xl bg-[#0B4A8A] hover:bg-[#093a6d] text-white text-xs font-bold transition-all shadow-xs cursor-pointer flex items-center gap-1"
+              className="px-4 py-1.5 rounded-full bg-[#FF7900] hover:bg-[#e06b00] text-white text-xs font-black transition-all shadow-xs cursor-pointer flex items-center gap-1"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>দোকান যোগ করুন</span>
@@ -87,7 +87,7 @@ export const ShopsPage: React.FC<ShopsPageProps> = ({
         </div>
 
         {/* Filters & Search Controls Bar */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm space-y-4">
+        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-4">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
             {/* Search Input */}
             <div className="relative w-full sm:max-w-md">
@@ -97,7 +97,7 @@ export const ShopsPage: React.FC<ShopsPageProps> = ({
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="দোকানের নাম বা পণ্য দিয়ে খুঁজুন..."
-                className="w-full pl-10 pr-4 py-2.5 text-xs sm:text-sm bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0B4A8A]"
+                className="w-full pl-10 pr-4 py-2.5 text-xs sm:text-sm bg-slate-100 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0B4A8A]"
               />
               {searchQuery && (
                 <button
@@ -110,13 +110,13 @@ export const ShopsPage: React.FC<ShopsPageProps> = ({
             </div>
 
             {/* View Mode Toggle Switch */}
-            <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl shrink-0 w-full sm:w-auto justify-center">
+            <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-xl shrink-0 w-full sm:w-auto justify-center">
               <button
                 onClick={() => setViewMode('grid')}
                 className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                   viewMode === 'grid'
-                    ? 'bg-white dark:bg-slate-900 text-[#0B4A8A] dark:text-cyan-400 shadow-sm'
-                    : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                    ? 'bg-white text-[#0B4A8A] shadow-sm'
+                    : 'text-slate-500 hover:text-slate-900'
                 }`}
               >
                 <Grid className="w-4 h-4" />
@@ -126,8 +126,8 @@ export const ShopsPage: React.FC<ShopsPageProps> = ({
                 onClick={() => setViewMode('map')}
                 className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                   viewMode === 'map'
-                    ? 'bg-white dark:bg-slate-900 text-[#FF7900] shadow-sm'
-                    : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                    ? 'bg-white text-[#FF7900] shadow-sm'
+                    : 'text-slate-500 hover:text-slate-900'
                 }`}
               >
                 <Map className="w-4 h-4" />
@@ -143,7 +143,7 @@ export const ShopsPage: React.FC<ShopsPageProps> = ({
               className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
                 selectedCategory === 'all'
                   ? 'bg-[#0B4A8A] text-white shadow-sm'
-                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
               সকল দোকান ({shops.length})
@@ -155,7 +155,7 @@ export const ShopsPage: React.FC<ShopsPageProps> = ({
                 className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
                   selectedCategory === cat.id
                     ? 'bg-[#0B4A8A] text-white shadow-sm'
-                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}
               >
                 {cat.nameBn}
@@ -173,22 +173,22 @@ export const ShopsPage: React.FC<ShopsPageProps> = ({
           />
         ) : (
           <div className="space-y-4">
-            <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 flex items-center justify-between">
+            <div className="text-xs font-semibold text-slate-500 flex items-center justify-between">
               <span>মোট {filtered.length}টি দোকান পাওয়া গেছে</span>
-              <span className="text-emerald-600 dark:text-emerald-400 font-bold">
+              <span className="text-emerald-600 font-bold">
                 ✓ দূরত্ব অনুযায়ী সজ্জিত (নিকটতম প্রথম)
               </span>
             </div>
 
             {filtered.length === 0 ? (
-              <div className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-8 sm:p-14 text-center space-y-4">
-                <div className="w-16 h-16 rounded-2xl bg-amber-50 dark:bg-amber-950/40 text-[#FF7900] flex items-center justify-center mx-auto">
+              <div className="w-full bg-white border border-slate-200 rounded-3xl p-8 sm:p-14 text-center space-y-4">
+                <div className="w-16 h-16 rounded-2xl bg-amber-50 text-[#FF7900] flex items-center justify-center mx-auto">
                   <Store className="w-8 h-8" />
                 </div>
-                <h3 className="text-lg font-black text-slate-800 dark:text-slate-100">
+                <h3 className="text-lg font-black text-slate-800">
                   {searchQuery ? `"${searchQuery}" এর জন্য কোনো দোকান পাওয়া যায়নি` : 'বর্তমানে কোনো দোকান তালিকাভুক্ত নেই'}
                 </h3>
-                <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto">
+                <p className="text-xs sm:text-sm text-slate-500 max-w-md mx-auto">
                   আপনার এলাকার অবস্থান পরিবর্তন করুন অথবা প্রথম দোকানদার হিসেবে বিনামূল্যে আপনার দোকান যুক্ত করুন।
                 </p>
                 <div className="pt-2 flex justify-center gap-3">
@@ -207,14 +207,14 @@ export const ShopsPage: React.FC<ShopsPageProps> = ({
                 <div
                   key={shop.id}
                   onClick={() => onSelectShop(shop)}
-                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl overflow-hidden hover:shadow-xl hover:border-[#FF7900]/60 transition-all duration-300 flex flex-col sm:flex-row justify-between group cursor-pointer"
+                  className="w-full bg-white border border-slate-200 rounded-3xl overflow-hidden hover:shadow-xl hover:border-[#FF7900]/60 transition-all duration-300 flex flex-col sm:flex-row justify-between group cursor-pointer"
                 >
                   {/* Cover Header */}
-                  <div className="relative w-full sm:w-64 md:w-80 h-48 sm:h-auto min-h-[190px] bg-slate-200 dark:bg-slate-800 shrink-0 overflow-hidden">
+                  <div className="relative w-full sm:w-64 md:w-80 h-48 sm:h-auto min-h-[190px] bg-slate-200 shrink-0 overflow-hidden">
                     <img
                       src={shop.coverImage}
                       alt={shop.nameBn}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      className="w-full h-full object-cover group-hover:scale-105 animate-image-kenburns transition-transform duration-500"
                       referrerPolicy="no-referrer"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
@@ -255,7 +255,7 @@ export const ShopsPage: React.FC<ShopsPageProps> = ({
                   <div className="p-5 sm:p-6 flex-1 flex flex-col justify-between space-y-3">
                     <div>
                       <div className="flex items-center justify-between gap-2 mb-2">
-                        <div className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300">
+                        <div className="flex items-center gap-1.5 text-xs text-slate-600">
                           <MapPin className="w-4 h-4 text-[#FF7900] shrink-0" />
                           <span className="line-clamp-1 font-semibold">{shop.addressBn}</span>
                         </div>
@@ -268,7 +268,7 @@ export const ShopsPage: React.FC<ShopsPageProps> = ({
 
                       {/* Featured Items list */}
                       {shop.featuredProducts && shop.featuredProducts.length > 0 && (
-                        <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 text-xs space-y-1.5">
+                        <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100 text-xs space-y-1.5">
                           <span className="text-[11px] text-slate-400 font-semibold block">
                             প্রধান পণ্যসমূহ ও মূল্য:
                           </span>
@@ -276,9 +276,9 @@ export const ShopsPage: React.FC<ShopsPageProps> = ({
                             {shop.featuredProducts.map((p, idx) => (
                               <span
                                 key={idx}
-                                className="text-xs font-semibold text-slate-800 dark:text-slate-200 bg-white dark:bg-slate-700/60 px-2 py-0.5 rounded-lg border border-slate-200/80 dark:border-slate-700"
+                                className="text-xs font-semibold text-slate-800 bg-white px-2 py-0.5 rounded-lg border border-slate-200/80"
                               >
-                                {p.nameBn} <span className="text-[#0B4A8A] dark:text-cyan-400 font-black">(৳{p.price})</span>
+                                {p.nameBn} <span className="text-[#0B4A8A] font-black">(৳{p.price})</span>
                               </span>
                             ))}
                           </div>
@@ -287,7 +287,7 @@ export const ShopsPage: React.FC<ShopsPageProps> = ({
                     </div>
 
                     {/* Actions */}
-                    <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3">
+                    <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-3">
                       <span className="text-xs font-bold text-[#FF7900] group-hover:underline flex items-center gap-1">
                         দোকান ও রুট ম্যাপ দেখুন
                         <ChevronRight className="w-4 h-4" />

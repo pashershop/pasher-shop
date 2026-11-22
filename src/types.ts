@@ -28,6 +28,7 @@ export interface ProductItem {
   shopId: string;
   shopName: string;
   shopArea: string;
+  shopPhone?: string;
   isAvailable: boolean;
   stockStatus: 'ইন স্টক' | 'সীমিত স্টক';
   inStock?: boolean;

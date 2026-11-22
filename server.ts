@@ -10,9 +10,22 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = Number(process.env.PORT) || 3000;
+const portArgIndex = process.argv.indexOf('--port');
+const cliPort = portArgIndex !== -1 ? Number(process.argv[portArgIndex + 1]) : NaN;
+const PORT = !Number.isNaN(cliPort) && cliPort > 0 ? cliPort : Number(process.env.PORT) || 3000;
 
 app.use(express.json());
+
+// Enable CORS for all incoming client requests and preflights
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(204);
+  }
+  next();
+});
 
 // Cloudflare D1 Configuration
 // Binding: DB, Database: pasher-shop-db
@@ -86,13 +99,53 @@ function saveLocalD1Data(data: any) {
   }
 }
 
+let resolvedDatabaseUuid: string | null = null;
+let remoteSchemaEnsured = false;
+let lastRemoteD1Error: string | null = null;
+
+async function getCloudflareD1DatabaseUuid(): Promise<string> {
+  if (resolvedDatabaseUuid) return resolvedDatabaseUuid;
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (uuidRegex.test(CLOUDFLARE_D1_DATABASE_ID)) {
+    resolvedDatabaseUuid = CLOUDFLARE_D1_DATABASE_ID;
+    return resolvedDatabaseUuid;
+  }
+
+  try {
+    const listUrl = `https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/d1/database?name=${encodeURIComponent(CLOUDFLARE_D1_DATABASE_ID)}`;
+    const res = await fetch(listUrl, {
+      headers: {
+        Authorization: `Bearer ${CLOUDFLARE_API_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    const listData = (await res.json()) as any;
+    const match = Array.isArray(listData?.result)
+      ? listData.result.find((d: any) => d.name === CLOUDFLARE_D1_DATABASE_ID) || listData.result[0]
+      : null;
+    if (match?.uuid) {
+      resolvedDatabaseUuid = match.uuid;
+      return match.uuid;
+    }
+    if (listData?.errors?.length) {
+      lastRemoteD1Error = listData.errors.map((e: any) => e.message).join('; ');
+    }
+  } catch (err: any) {
+    lastRemoteD1Error = err?.message || 'UUID lookup failed';
+    console.warn('Could not resolve Cloudflare D1 UUID by name:', err);
+  }
+
+  return CLOUDFLARE_D1_DATABASE_ID;
+}
+
 // Helper to query Cloudflare D1 REST API using prepared statements
 async function queryCloudflareD1(sql: string, params: any[] = []) {
   if (!hasCloudflareCredentials) {
     return null;
   }
 
-  const url = `https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/d1/database/${CLOUDFLARE_D1_DATABASE_ID}/query`;
+  const dbId = await getCloudflareD1DatabaseUuid();
+  const url = `https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/d1/database/${dbId}/query`;
 
   try {
     const response = await fetch(url, {
@@ -106,25 +159,82 @@ async function queryCloudflareD1(sql: string, params: any[] = []) {
 
     const data = (await response.json()) as any;
     if (data.success && data.result && data.result[0]) {
+      lastRemoteD1Error = null;
       return data.result[0].results;
     }
-  } catch (err) {
+    if (data?.errors?.length) {
+      lastRemoteD1Error = data.errors.map((e: any) => `${e.code || ''}: ${e.message}`).join('; ');
+      console.warn('Cloudflare D1 REST API query error:', lastRemoteD1Error);
+    }
+  } catch (err: any) {
+    lastRemoteD1Error = err?.message || 'Network error';
     console.warn('Cloudflare D1 REST API query warning:', err);
   }
 
   return null;
 }
 
+async function ensureRemoteD1Schema() {
+  if (!hasCloudflareCredentials || remoteSchemaEnsured) return;
+  try {
+    const test = await queryCloudflareD1('SELECT 1 as ok');
+    if (!test) return;
+    remoteSchemaEnsured = true;
+
+    await queryCloudflareD1(
+      `CREATE TABLE IF NOT EXISTS users (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        phone TEXT UNIQUE NOT NULL,
+        role TEXT DEFAULT 'customer',
+        password_hash TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )`
+    );
+    await queryCloudflareD1(
+      `CREATE TABLE IF NOT EXISTS sessions (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        token TEXT UNIQUE NOT NULL,
+        expires_at DATETIME NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )`
+    );
+    const cols = await queryCloudflareD1('PRAGMA table_info(users)');
+    if (Array.isArray(cols)) {
+      const colNames = new Set(cols.map((c: any) => c.name));
+      if (!colNames.has('password_hash')) {
+        await queryCloudflareD1('ALTER TABLE users ADD COLUMN password_hash TEXT');
+      }
+      if (!colNames.has('role')) {
+        await queryCloudflareD1("ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'customer'");
+      }
+    }
+  } catch (err) {
+    console.warn('ensureRemoteD1Schema warning:', err);
+  }
+}
+
 // ----------------------------------------------------
 // 0. Cloudflare D1 Status Endpoint: GET /api/d1/status
 // ----------------------------------------------------
 app.get('/api/d1/status', async (_req, res) => {
+  let remoteConnected = false;
+  if (hasCloudflareCredentials) {
+    const ping = await queryCloudflareD1('SELECT 1 as ok');
+    remoteConnected = Boolean(ping);
+    if (remoteConnected) {
+      await ensureRemoteD1Schema();
+    }
+  }
   res.json({
     binding: CLOUDFLARE_D1_BINDING,
     databaseName: 'pasher-shop-db',
     connected: true,
-    mode: hasCloudflareCredentials ? 'cloudflare_d1_api' : 'local_persistent_d1',
-    message: hasCloudflareCredentials
+    remoteConnected,
+    mode: remoteConnected ? 'cloudflare_d1_api' : 'local_persistent_d1',
+    remoteError: remoteConnected ? null : lastRemoteD1Error,
+    message: remoteConnected
       ? 'Cloudflare D1 SQL (DB: pasher-shop-db) রিমোট ক্লাউডে সংযুক্ত'
       : 'Cloudflare D1 SQL (DB: pasher-shop-db) লোকাল পারসিসটেন্ট স্টোরেজে সক্রিয় রয়েছে',
   });
@@ -149,9 +259,19 @@ function generateToken(): string {
   return `pst_${Date.now()}_${hex}`;
 }
 
-// Phone normalizer
+// Phone normalizer (converts Bengali numerals & handles +880/880 prefixes)
 function normalizePhone(phone: string): string {
-  return phone.replace(/[^0-9]/g, '');
+  if (!phone) return '';
+  const bnToEnMap: Record<string, string> = {
+    '০': '0', '১': '1', '২': '2', '৩': '3', '৪': '4',
+    '৫': '5', '৬': '6', '৭': '7', '৮': '8', '৯': '9',
+  };
+  let clean = phone.replace(/[০-৯]/g, (d) => bnToEnMap[d] || d);
+  clean = clean.replace(/[^0-9]/g, '');
+  if (clean.startsWith('880') && clean.length >= 13) {
+    clean = clean.slice(2);
+  }
+  return clean;
 }
 
 // ----------------------------------------------------
@@ -991,10 +1111,18 @@ app.post('/api/shops/:id/reviews', async (req, res) => {
   res.status(201).json(newReview);
 });
 
+// Return JSON 404 for unknown /api/* routes so they never return HTML
+app.use('/api', (_req, res) => {
+  res.status(404).json({ success: false, error: 'API রুট পাওয়া যায়নি' });
+});
+
 // ----------------------------------------------------
 // Vite Server Integration (Port 3000)
 // ----------------------------------------------------
 async function startServer() {
+  if (hasCloudflareCredentials) {
+    await ensureRemoteD1Schema();
+  }
   const isProd = process.env.NODE_ENV === 'production';
 
   if (!isProd) {

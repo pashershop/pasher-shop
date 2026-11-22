@@ -27,6 +27,7 @@ import { ProductsPage } from './components/ProductsPage';
 import { PriceComparePage } from './components/PriceComparePage';
 import { BottomNavBar, AppView } from './components/BottomNavBar';
 import { FloatingLocationButton } from './components/FloatingLocationButton';
+import { CartoonBazaarBackground } from './components/CartoonBazaarBackground';
 
 import { SHOPS, FEATURED_PRODUCTS } from './data/mockData';
 import { d1Service } from './services/d1Service';
@@ -52,34 +53,15 @@ export default function App() {
   // View state: 'home' | 'shops' | 'products' | 'price-compare' | 'dashboard'
   const [currentView, setCurrentView] = useState<AppView>('home');
 
-  // Dark / Light Mode State
-  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
-    try {
-      const saved = localStorage.getItem('pasher_shop_theme');
-      if (saved === 'dark') return true;
-      if (saved === 'light') return false;
-      return window.matchMedia('(prefers-color-scheme: dark)').matches;
-    } catch {
-      return false;
-    }
-  });
-
-  // Sync theme class on <html>
+  // Ensure light mode only across the entire app
   React.useEffect(() => {
-    if (isDarkMode) {
-      document.documentElement.classList.add('dark');
-      try {
-        localStorage.setItem('pasher_shop_theme', 'dark');
-      } catch (e) {}
-    } else {
-      document.documentElement.classList.remove('dark');
-      try {
-        localStorage.setItem('pasher_shop_theme', 'light');
-      } catch (e) {}
+    document.documentElement.classList.remove('dark');
+    try {
+      localStorage.removeItem('pasher_shop_theme');
+    } catch {
+      // ignore
     }
-  }, [isDarkMode]);
-
-  const toggleTheme = () => setIsDarkMode((prev) => !prev);
+  }, []);
 
   // Dynamic shops state initialized from localStorage or SHOPS (filtered of any legacy demo shops)
   const [allShops, setAllShops] = useState<Shop[]>(() => {
@@ -145,6 +127,8 @@ export default function App() {
     d1Service.getCurrentUser().then((res) => {
       if (res.success && res.user) {
         setCurrentUser(res.user);
+      } else {
+        setCurrentUser(null);
       }
     });
 
@@ -400,7 +384,9 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#F8FAFC] dark:bg-slate-950 text-[#171717] dark:text-slate-100 font-sans antialiased selection:bg-[#FF7900]/20 selection:text-[#0B4A8A] pb-20 sm:pb-24">
+    <div className="relative min-h-screen flex flex-col bg-transparent text-[#171717] font-sans antialiased selection:bg-[#FF7900]/20 selection:text-[#0B4A8A] pb-20 sm:pb-24">
+      {/* Pure Inline-Code Cartoon Bazaar Background */}
+      <CartoonBazaarBackground />
       
       {/* Google Maps Platform Quota Warning Banner */}
       {quotaExceeded && (
@@ -422,24 +408,18 @@ export default function App() {
 
       {/* Header & Top Navigation */}
       <Header
-        currentArea={currentArea}
-        isAutoDetected={isAutoDetected}
         hasOwnedShop={!!myShop}
         ownedShopName={myShop?.nameBn}
         currentUser={currentUser}
         onLogout={handleLogout}
         currentView={currentView}
-        isDarkMode={isDarkMode}
-        onToggleTheme={toggleTheme}
-        onDetectLocation={detectLiveLocation}
-        onOpenLocationModal={() => setIsLocationModalOpen(true)}
-        onOpenAuthModal={(mode) => setAuthModalConfig({ isOpen: true, mode })}
         onOpenAddShopModal={() => setIsAddShopOpen(true)}
         onNavigateView={handleNavigateView}
         onNavigateSection={handleNavigateSection}
       />
 
       {/* Conditional Dedicated Views Rendering */}
+      <div className="relative z-10 flex-1 flex flex-col">
       {activeShop ? (
         <ShopDetailPage
           shop={activeShop}
@@ -526,7 +506,7 @@ export default function App() {
 
             {/* Search Results Alert if active */}
             {searchQuery && (
-              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+              <div className="w-full px-4 sm:px-6 lg:px-8 pt-6">
                 <div className="p-3.5 rounded-xl bg-[#0B4A8A]/5 border border-[#0B4A8A]/20 flex items-center justify-between text-xs sm:text-sm">
                   <span className="text-[#0B4A8A] font-semibold">
                     "{searchQuery}" এর জন্য পাওয়া ফলাফল ({filteredShops.length}টি দোকান, {filteredProducts.length}টি পণ্য)
@@ -582,6 +562,7 @@ export default function App() {
           />
         </>
       )}
+      </div>
 
       {/* Floating GPS Location Button (Fixed bottom right above nav bar) */}
       <FloatingLocationButton

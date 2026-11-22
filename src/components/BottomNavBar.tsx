@@ -44,7 +44,7 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
 
   return (
     <div
-      className={`fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] transition-transform duration-300 ease-in-out ${
+      className={`fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] transition-transform duration-300 ease-in-out ${
         isVisible ? 'translate-y-0' : 'translate-y-full'
       }`}
     >
@@ -58,27 +58,27 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
               onClick={() => onNavigateView(id)}
               className={`relative flex flex-col items-center justify-center py-1 px-3 rounded-xl transition-all cursor-pointer ${
                 isActive
-                  ? 'text-[#0B4A8A] dark:text-cyan-400 font-extrabold scale-105'
-                  : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                  ? 'text-[#0B4A8A] font-extrabold scale-105'
+                  : 'text-slate-500 hover:text-slate-800'
               }`}
             >
               <Icon
                 className={`w-5 h-5 transition-colors ${
                   isActive
-                    ? 'text-[#0B4A8A] dark:text-cyan-400'
-                    : 'text-slate-400 dark:text-slate-500'
+                    ? 'text-[#0B4A8A]'
+                    : 'text-slate-400'
                 }`}
               />
               <span className="text-[10px] mt-0.5 whitespace-nowrap">{label}</span>
               
               {/* Badge for shop owner in dashboard */}
               {id === 'dashboard' && hasOwnedShop && (
-                <span className="absolute top-1 right-2 w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-slate-900" />
+                <span className="absolute top-1 right-2 w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-white" />
               )}
 
               {/* Active Indicator Dot */}
               {isActive && (
-                <span className="w-1.5 h-1.5 rounded-full bg-[#0B4A8A] dark:bg-cyan-400 mt-0.5" />
+                <span className="w-1.5 h-1.5 rounded-full bg-[#0B4A8A] mt-0.5" />
               )}
             </button>
           );

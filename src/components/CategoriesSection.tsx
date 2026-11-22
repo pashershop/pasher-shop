@@ -51,14 +51,14 @@ export const CategoriesSection: React.FC<CategoriesSectionProps> = ({
   };
 
   return (
-    <section id="categories" className="py-7 sm:py-9 bg-[#F8FAFC] dark:bg-[#030712] transition-colors">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section id="categories" className="py-7 sm:py-9 bg-white/55 backdrop-blur-[1px] transition-colors">
+      <div className="w-full px-4 sm:px-6 lg:px-8">
         
         {/* Compact Section Header */}
-        <div className="flex items-center justify-between mb-4 pb-2 border-b border-[#E5E7EB] dark:border-slate-800">
+        <div className="flex items-center justify-between mb-4 pb-2 border-b border-[#E5E7EB]">
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-[#FF7900]" />
-            <h2 className="text-lg sm:text-xl font-extrabold text-[#171717] dark:text-white tracking-tight">
+            <h2 className="text-lg sm:text-xl font-extrabold text-[#171717] tracking-tight">
               জনপ্রিয় ক্যাটাগরি
             </h2>
             <span className="text-xs text-slate-400 hidden sm:inline">
@@ -91,8 +91,8 @@ export const CategoriesSection: React.FC<CategoriesSectionProps> = ({
                 onClick={() => onSelectCategory(cat.id)}
                 className={`group relative flex flex-col items-center justify-center p-2 sm:p-2.5 rounded-xl border text-center transition-all duration-150 focus:outline-none cursor-pointer ${
                   isSelected
-                    ? 'bg-white dark:bg-[#0B0F19] border-[#FF7900] dark:border-[#FF7900] shadow-sm ring-2 ring-[#FF7900]/30 scale-[1.02]'
-                    : 'bg-white dark:bg-[#090D16] hover:bg-slate-50 dark:hover:bg-slate-900 border-slate-200 dark:border-slate-800/80 hover:border-[#0B4A8A]/40 dark:hover:border-cyan-500/40 shadow-2xs hover:shadow-xs'
+                    ? 'bg-white border-[#FF7900] shadow-sm ring-2 ring-[#FF7900]/30 scale-[1.02]'
+                    : 'bg-white hover:bg-slate-50 border-slate-200 hover:border-[#0B4A8A]/40 shadow-2xs hover:shadow-xs'
                 }`}
               >
                 {/* Compact Icon */}
@@ -100,7 +100,7 @@ export const CategoriesSection: React.FC<CategoriesSectionProps> = ({
                   className={`w-9 h-9 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center mb-1.5 transition-colors ${
                     isSelected
                       ? 'bg-[#FF7900] text-white shadow-2xs'
-                      : 'bg-[#0B4A8A]/5 dark:bg-slate-800 text-[#0B4A8A] dark:text-cyan-400 group-hover:bg-[#FF7900]/10 group-hover:text-[#FF7900]'
+                      : 'bg-[#0B4A8A]/5 text-[#0B4A8A] group-hover:bg-[#FF7900]/10 group-hover:text-[#FF7900]'
                   }`}
                 >
                   {getIcon(cat.iconName)}
@@ -111,7 +111,7 @@ export const CategoriesSection: React.FC<CategoriesSectionProps> = ({
                   className={`text-[11px] sm:text-xs font-bold tracking-tight line-clamp-1 transition-colors ${
                     isSelected
                       ? 'text-[#FF7900]'
-                      : 'text-slate-700 dark:text-slate-200 group-hover:text-[#0B4A8A] dark:group-hover:text-cyan-400'
+                      : 'text-slate-700 group-hover:text-[#0B4A8A]'
                   }`}
                   title={cat.nameBn}
                 >

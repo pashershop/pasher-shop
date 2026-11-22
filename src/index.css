@@ -1,7 +1,5 @@
 @import "tailwindcss";
 
-@custom-variant dark (&:where(.dark, .dark *));
-
 @theme {
   --font-sans: 'Hind Siliguri', 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
   --font-display: 'Plus Jakarta Sans', 'Hind Siliguri', system-ui, sans-serif;
@@ -14,16 +12,11 @@
 
 body {
   font-family: var(--font-sans);
-  background-color: #F8FAFC;
+  background: linear-gradient(180deg, #EAF2FF 0%, #F8FAFC 45%, #EEF4FF 100%);
   color: #171717;
   margin: 0;
   padding: 0;
   overflow-x: hidden;
-}
-
-.dark body {
-  background-color: #030712;
-  color: #F3F4F6;
 }
 
 /* Custom scrollbar for clean horizontal cards */
@@ -34,16 +27,97 @@ body {
 ::-webkit-scrollbar-track {
   background: #F1F5F9;
 }
-.dark ::-webkit-scrollbar-track {
-  background: #030712;
-}
 ::-webkit-scrollbar-thumb {
   background: #CBD5E1;
   border-radius: 9999px;
 }
-.dark ::-webkit-scrollbar-thumb {
-  background: #1F2937;
-}
 ::-webkit-scrollbar-thumb:hover {
   background: #94A3B8;
+}
+
+/* Cartoon Bazaar & Image Animations */
+@keyframes bazaar-cloud-drift {
+  0%, 100% {
+    transform: translateX(0px) translateY(0px);
+  }
+  50% {
+    transform: translateX(28px) translateY(-4px);
+  }
+}
+
+@keyframes bazaar-float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-7px);
+  }
+}
+
+@keyframes bazaar-sway {
+  0%, 100% {
+    transform: rotate(-1.2deg);
+  }
+  50% {
+    transform: rotate(1.2deg);
+  }
+}
+
+@keyframes bazaar-spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes bazaar-cart-glide {
+  0%, 100% {
+    transform: translate(952px, 276px);
+  }
+  50% {
+    transform: translate(978px, 273px);
+  }
+}
+
+@keyframes image-kenburns {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.06);
+  }
+}
+
+.animate-bazaar-cloud {
+  animation: bazaar-cloud-drift 10s ease-in-out infinite;
+}
+
+.animate-bazaar-cloud-slow {
+  animation: bazaar-cloud-drift 15s ease-in-out infinite reverse;
+}
+
+.animate-bazaar-float {
+  animation: bazaar-float 5.5s ease-in-out infinite;
+}
+
+.animate-bazaar-sway {
+  transform-box: fill-box;
+  transform-origin: top center;
+  animation: bazaar-sway 4.5s ease-in-out infinite;
+}
+
+.animate-bazaar-spin-slow {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: bazaar-spin-slow 24s linear infinite;
+}
+
+.animate-bazaar-cart {
+  animation: bazaar-cart-glide 7s ease-in-out infinite;
+}
+
+.animate-image-kenburns {
+  animation: image-kenburns 12s ease-in-out infinite;
 }

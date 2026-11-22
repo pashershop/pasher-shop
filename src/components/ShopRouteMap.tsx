@@ -478,9 +478,9 @@ export const ShopRouteMap: React.FC<ShopRouteMapProps> = ({
             </Map>
           </APIProvider>
         ) : (
-          <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center text-slate-500 bg-slate-100 dark:bg-slate-900">
+          <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center text-slate-500 bg-slate-100">
             <MapPin className="w-8 h-8 text-[#FF7900] mb-2 animate-bounce" />
-            <p className="text-sm font-bold text-slate-800 dark:text-slate-200">
+            <p className="text-sm font-bold text-slate-800">
               {shop.nameBn} এর অবস্থান ও দিকদর্শন
             </p>
             <p className="text-xs text-slate-500 mt-1">

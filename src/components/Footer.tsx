@@ -14,31 +14,31 @@ export const Footer: React.FC<FooterProps> = ({
   onOpenAuthModal,
 }) => {
   return (
-    <footer className="bg-white dark:bg-[#02050B] border-t border-[#E5E7EB] dark:border-slate-900 pt-12 pb-8 text-[#171717] dark:text-slate-100 transition-colors">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <footer className="bg-white/75 backdrop-blur-xs border-t border-[#0B4A8A]/10 pt-12 pb-8 text-[#171717] transition-colors">
+      <div className="w-full px-4 sm:px-6 lg:px-8">
         
         {/* Top 4-Column Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 lg:gap-10 pb-12 border-b border-[#E5E7EB] dark:border-slate-900">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 lg:gap-10 pb-12 border-b border-[#E5E7EB]">
           
           {/* Brand & Tagline Column */}
           <div className="lg:col-span-2 flex flex-col space-y-4">
             <Logo size="lg" showTagline={true} />
             
-            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed max-w-sm mt-2">
+            <p className="text-xs sm:text-sm text-slate-600 leading-relaxed max-w-sm mt-2">
               Pasher Shop বাংলাদেশের প্রথম ও আধুনিক লোকাল শপিং মার্কেটপ্লেস। আপনার পাড়া-মহল্লার দোকানগুলোকে অনলাইনের মাধ্যমে ক্রেতাদের আরও কাছে পৌঁছে দেওয়া আমাদের একমাত্র ব্রত।
             </p>
 
-            <div className="pt-2 text-xs text-slate-600 dark:text-slate-400 space-y-1.5">
+            <div className="pt-2 text-xs text-slate-600 space-y-1.5">
               <div className="flex items-center gap-2">
-                <MapPin className="w-3.5 h-3.5 text-[#0B4A8A] dark:text-cyan-400 shrink-0" />
+                <MapPin className="w-3.5 h-3.5 text-[#0B4A8A] shrink-0" />
                 <span>ঢাকা, বাংলাদেশ</span>
               </div>
               <div className="flex items-center gap-2">
-                <Phone className="w-3.5 h-3.5 text-[#0B4A8A] dark:text-cyan-400 shrink-0" />
+                <Phone className="w-3.5 h-3.5 text-[#0B4A8A] shrink-0" />
                 <span>হেল্পলাইন: +৮৮০ ১৭০১-০০০০০০</span>
               </div>
               <div className="flex items-center gap-2">
-                <Mail className="w-3.5 h-3.5 text-[#0B4A8A] dark:text-cyan-400 shrink-0" />
+                <Mail className="w-3.5 h-3.5 text-[#0B4A8A] shrink-0" />
                 <span>
                   সহযোগিতা:{' '}
                   <a
@@ -54,10 +54,10 @@ export const Footer: React.FC<FooterProps> = ({
 
           {/* Quick Links Column */}
           <div className="flex flex-col space-y-3">
-            <h4 className="text-sm font-bold text-[#171717] dark:text-white tracking-tight">
+            <h4 className="text-sm font-bold text-[#171717] tracking-tight">
               প্রয়োজনীয় লিংক (Quick Links)
             </h4>
-            <ul className="space-y-2 text-xs sm:text-sm text-slate-600 dark:text-slate-400">
+            <ul className="space-y-2 text-xs sm:text-sm text-slate-600">
               <li>
                 <button
                   onClick={() => onNavigate('hero')}
@@ -95,10 +95,10 @@ export const Footer: React.FC<FooterProps> = ({
 
           {/* For Shop Owners Column */}
           <div className="flex flex-col space-y-3">
-            <h4 className="text-sm font-bold text-[#171717] dark:text-white tracking-tight">
+            <h4 className="text-sm font-bold text-[#171717] tracking-tight">
               দোকানিদের জন্য (For Shop Owners)
             </h4>
-            <ul className="space-y-2 text-xs sm:text-sm text-slate-600 dark:text-slate-400">
+            <ul className="space-y-2 text-xs sm:text-sm text-slate-600">
               <li>
                 <button
                   onClick={onOpenAddShopModal}
@@ -110,7 +110,7 @@ export const Footer: React.FC<FooterProps> = ({
               <li>
                 <button
                   onClick={() => onOpenAuthModal('login')}
-                  className="hover:text-[#0B4A8A] dark:hover:text-cyan-400 transition-colors cursor-pointer"
+                  className="hover:text-[#0B4A8A] transition-colors cursor-pointer"
                 >
                   মার্চেন্ট লগইন (Merchant Login)
                 </button>
@@ -118,7 +118,7 @@ export const Footer: React.FC<FooterProps> = ({
               <li>
                 <button
                   onClick={() => onOpenAuthModal('signup')}
-                  className="hover:text-[#0B4A8A] dark:hover:text-cyan-400 transition-colors cursor-pointer"
+                  className="hover:text-[#0B4A8A] transition-colors cursor-pointer"
                 >
                   মার্চেন্ট রেজিস্ট্রেশন (Registration)
                 </button>
@@ -133,22 +133,22 @@ export const Footer: React.FC<FooterProps> = ({
 
           {/* Support & Social Column */}
           <div className="flex flex-col space-y-3">
-            <h4 className="text-sm font-bold text-[#171717] dark:text-white tracking-tight">
+            <h4 className="text-sm font-bold text-[#171717] tracking-tight">
               সহায়তা ও নিরাপত্তা (Support)
             </h4>
-            <ul className="space-y-2 text-xs sm:text-sm text-slate-600 dark:text-slate-400">
+            <ul className="space-y-2 text-xs sm:text-sm text-slate-600">
               <li>
-                <a href="#help" className="hover:text-[#0B4A8A] dark:hover:text-cyan-400 transition-colors">
+                <a href="#help" className="hover:text-[#0B4A8A] transition-colors">
                   হেল্প সেন্টার (Help Center)
                 </a>
               </li>
               <li>
-                <a href="#privacy" className="hover:text-[#0B4A8A] dark:hover:text-cyan-400 transition-colors">
+                <a href="#privacy" className="hover:text-[#0B4A8A] transition-colors">
                   প্রাইভেসি পলিসি (Privacy Policy)
                 </a>
               </li>
               <li>
-                <a href="#terms" className="hover:text-[#0B4A8A] dark:hover:text-cyan-400 transition-colors">
+                <a href="#terms" className="hover:text-[#0B4A8A] transition-colors">
                   শর্তাবলি (Terms & Conditions)
                 </a>
               </li>
@@ -156,7 +156,7 @@ export const Footer: React.FC<FooterProps> = ({
 
             {/* Social Media Icons */}
             <div className="pt-2">
-              <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-2.5">
+              <span className="text-xs font-semibold text-slate-700 block mb-2.5">
                 সোশ্যাল মিডিয়ায় যুক্ত থাকুন:
               </span>
               <div className="flex flex-wrap items-center gap-2">
@@ -298,9 +298,9 @@ export const Footer: React.FC<FooterProps> = ({
         </div>
 
         {/* Bottom Copyright Bar */}
-        <div className="pt-8 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 dark:text-slate-400 gap-3">
+        <div className="pt-8 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-3">
           <div>
-            © 2026 <span className="font-bold text-[#0B4A8A] dark:text-cyan-400">Pasher Shop</span>. All Rights Reserved.
+            © 2026 <span className="font-bold text-[#0B4A8A]">Pasher Shop</span>. All Rights Reserved.
           </div>
           <div className="flex items-center gap-1 text-slate-400">
             <span>বাংলাদেশের স্থানীয় ব্যবসায়ীদের সমর্থনে তৈরি</span>

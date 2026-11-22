@@ -328,33 +328,73 @@ export const d1Service = {
     password: string;
     role: 'customer' | 'merchant';
   }): Promise<{ success: boolean; message?: string; token?: string; user?: any; error?: string }> {
+    const cleanPhone = normalizePhoneNumber(data.phone);
+    if (!cleanPhone || cleanPhone.length < 11) {
+      return { success: false, error: 'সঠিক ১১ ডিজিটের মোবাইল নম্বর দিন (যেমন: 017xxxxxxxx)' };
+    }
+
+    const payload = {
+      name: data.name.trim(),
+      phone: cleanPhone,
+      password: data.password.trim(),
+      role: data.role === 'merchant' ? 'merchant' : 'customer',
+    };
+
     try {
       const res = await fetch('/api/auth/register', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        credentials: 'same-origin',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify(payload),
       });
 
-      const result = await res.json();
-      if (res.ok && result.token) {
+      const rawText = await res.text();
+      let result: any = null;
+      try {
+        result = rawText ? JSON.parse(rawText) : null;
+      } catch {
+        result = null;
+      }
+
+      if (res.ok && result?.success && result?.token && result?.user) {
         this.setStoredToken(result.token);
-        if (result.user) {
-          try {
-            localStorage.setItem('pasher_auth_user', JSON.stringify(result.user));
-          } catch {}
-        }
-        return { success: true, message: result.message, token: result.token, user: result.user };
+        try {
+          localStorage.setItem('pasher_auth_user', JSON.stringify(result.user));
+        } catch {}
+        return {
+          success: true,
+          message: result.message,
+          token: result.token,
+          user: result.user,
+        };
+      }
+
+      if (result?.error) {
+        return {
+          success: false,
+          error: result.error,
+        };
+      }
+
+      if (res.status === 404 || res.status === 405) {
+        return {
+          success: false,
+          error: 'অথেনটিকেশন API (/api/auth/register) পাওয়া যায়নি। ব্যাকএন্ড সার্ভার বা Cloudflare Worker চালু আছে কিনা নিশ্চিত করুন।',
+        };
       }
 
       return {
         success: false,
-        error: result.error || 'নিবন্ধন সম্পন্ন করতে ব্যর্থ হয়েছে',
+        error: `নিবন্ধন সম্পন্ন করা যায়নি (HTTP ${res.status})। অনুগ্রহ করে পেজটি রিফ্রেশ করে আবার চেষ্টা করুন।`,
       };
     } catch (err: any) {
-      console.error('d1Service.register error:', err);
+      console.error('d1Service.register network error:', err);
       return {
         success: false,
-        error: 'নেটওয়ার্ক বা সার্ভারে সমস্যা দেখা দিয়েছে। পুনরায় চেষ্টা করুন।',
+        error: 'সার্ভারের সাথে সংযোগ স্থাপন করা যায়নি। আপনার ইন্টারনেট সংযোগ পরীক্ষা করে পুনরায় চেষ্টা করুন।',
       };
     }
   },
@@ -366,33 +406,71 @@ export const d1Service = {
     phone: string;
     password: string;
   }): Promise<{ success: boolean; message?: string; token?: string; user?: any; error?: string }> {
+    const cleanPhone = normalizePhoneNumber(data.phone);
+    if (!cleanPhone || cleanPhone.length < 11) {
+      return { success: false, error: 'সঠিক ১১ ডিজিটের মোবাইল নম্বর লিখুন' };
+    }
+
+    const payload = {
+      phone: cleanPhone,
+      password: data.password.trim(),
+    };
+
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        credentials: 'same-origin',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify(payload),
       });
 
-      const result = await res.json();
-      if (res.ok && result.token) {
+      const rawText = await res.text();
+      let result: any = null;
+      try {
+        result = rawText ? JSON.parse(rawText) : null;
+      } catch {
+        result = null;
+      }
+
+      if (res.ok && result?.success && result?.token && result?.user) {
         this.setStoredToken(result.token);
-        if (result.user) {
-          try {
-            localStorage.setItem('pasher_auth_user', JSON.stringify(result.user));
-          } catch {}
-        }
-        return { success: true, message: result.message, token: result.token, user: result.user };
+        try {
+          localStorage.setItem('pasher_auth_user', JSON.stringify(result.user));
+        } catch {}
+        return {
+          success: true,
+          message: result.message,
+          token: result.token,
+          user: result.user,
+        };
+      }
+
+      if (result?.error) {
+        return {
+          success: false,
+          error: result.error,
+        };
+      }
+
+      if (res.status === 404 || res.status === 405) {
+        return {
+          success: false,
+          error: 'লগইন API (/api/auth/login) পাওয়া যায়নি। ব্যাকএন্ড সার্ভার বা Cloudflare Worker চালু আছে কিনা নিশ্চিত করুন।',
+        };
       }
 
       return {
         success: false,
-        error: result.error || 'মোবাইল নম্বর অথবা পাসওয়ার্ড সঠিক নয়',
+        error: 'মোবাইল নম্বর অথবা পাসওয়ার্ড সঠিক নয় অথবা সার্ভারে ত্রুটি হয়েছে।',
       };
     } catch (err: any) {
-      console.error('d1Service.login error:', err);
+      console.error('d1Service.login network error:', err);
       return {
         success: false,
-        error: 'নেটওয়ার্ক বা সার্ভারে সমস্যা দেখা দিয়েছে। পুনরায় চেষ্টা করুন।',
+        error: 'সার্ভারের সাথে সংযোগ স্থাপন করা যায়নি। পুনরায় চেষ্টা করুন।',
       };
     }
   },
@@ -408,36 +486,37 @@ export const d1Service = {
 
     try {
       const res = await fetch('/api/auth/me', {
+        credentials: 'same-origin',
         headers: {
           Authorization: `Bearer ${token}`,
+          Accept: 'application/json',
         },
       });
 
-      if (res.ok) {
-        const result = await res.json();
-        if (result.user) {
-          try {
-            localStorage.setItem('pasher_auth_user', JSON.stringify(result.user));
-          } catch {}
-          return { success: true, user: result.user };
-        }
-      } else if (res.status === 401) {
-        // Expired token
+      const rawText = await res.text();
+      let result: any = null;
+      try {
+        result = rawText ? JSON.parse(rawText) : null;
+      } catch {
+        result = null;
+      }
+
+      if (res.ok && result?.success && result?.user) {
+        try {
+          localStorage.setItem('pasher_auth_user', JSON.stringify(result.user));
+        } catch {}
+        return { success: true, user: result.user };
+      }
+
+      if (res.status === 401 || res.status === 403) {
         this.removeStoredToken();
+        return { success: false, error: result?.error || 'সেশন মেয়াদোত্তীর্ণ হয়েছে' };
       }
     } catch (err) {
-      console.warn('d1Service.getCurrentUser network fallback:', err);
+      console.warn('d1Service.getCurrentUser network error:', err);
     }
 
-    // Resilient local user fallback if previously saved
-    try {
-      const cached = localStorage.getItem('pasher_auth_user');
-      if (cached) {
-        return { success: true, user: JSON.parse(cached) };
-      }
-    } catch {}
-
-    return { success: false, error: 'সেশন পাওয়া যায়নি' };
+    return { success: false, error: 'সেশন যাচাই করা যায়নি' };
   },
 
   /**
@@ -451,6 +530,7 @@ export const d1Service = {
       try {
         await fetch('/api/auth/logout', {
           method: 'POST',
+          credentials: 'same-origin',
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -461,4 +541,22 @@ export const d1Service = {
     }
   },
 };
+
+// ----------------------------------------------------
+// Authentication Helpers (Client)
+// ----------------------------------------------------
+export function normalizePhoneNumber(rawPhone: string): string {
+  if (!rawPhone) return '';
+  const bnToEnMap: Record<string, string> = {
+    '০': '0', '১': '1', '২': '2', '৩': '3', '৪': '4',
+    '৫': '5', '৬': '6', '৭': '7', '৮': '8', '৯': '9',
+  };
+  let clean = rawPhone.replace(/[০-৯]/g, (d) => bnToEnMap[d] || d);
+  clean = clean.replace(/[^0-9]/g, '');
+  if (clean.startsWith('880') && clean.length >= 13) {
+    clean = clean.slice(2);
+  }
+  return clean;
+}
+
 

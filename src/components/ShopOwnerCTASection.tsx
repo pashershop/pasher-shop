@@ -9,10 +9,10 @@ export const ShopOwnerCTASection: React.FC<ShopOwnerCTASectionProps> = ({
   onOpenAddShopModal,
 }) => {
   return (
-    <section className="py-12 sm:py-16 bg-white dark:bg-[#030712] border-b border-[#E5E7EB] dark:border-slate-900 transition-colors">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section className="py-12 sm:py-16 bg-white/55 backdrop-blur-[1px] border-b border-[#0B4A8A]/10 transition-colors">
+      <div className="w-full px-4 sm:px-6 lg:px-8">
         
-        <div className="relative rounded-3xl bg-gradient-to-br from-[#0B4A8A] via-[#093a6d] to-[#06294d] dark:from-[#0B2545] dark:via-[#0A192F] dark:to-[#030712] text-white p-8 sm:p-12 lg:p-16 overflow-hidden shadow-xl border border-white/10 dark:border-slate-800">
+        <div className="relative rounded-3xl bg-gradient-to-r from-[#073463] via-[#0B4A8A] to-[#1262B5] text-white p-8 sm:p-12 lg:p-16 overflow-hidden shadow-xl border border-white/15">
           
           {/* Background futuristic glow */}
           <div className="absolute -right-16 -bottom-16 w-80 h-80 rounded-full bg-[#FF7900]/10 blur-3xl pointer-events-none" />

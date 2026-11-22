@@ -75,9 +75,77 @@ function generateToken(): string {
   return `pst_${Date.now()}_${hex}`;
 }
 
-// Phone normalizer
+// Phone normalizer (converts Bengali numerals & handles +880/880 prefixes)
 function normalizePhone(phone: string): string {
-  return phone.replace(/[^0-9]/g, '');
+  if (!phone) return '';
+  const bnToEnMap: Record<string, string> = {
+    '০': '0', '১': '1', '২': '2', '৩': '3', '৪': '4',
+    '৫': '5', '৬': '6', '৭': '7', '৮': '8', '৯': '9',
+  };
+  let clean = phone.replace(/[০-৯]/g, (d) => bnToEnMap[d] || d);
+  clean = clean.replace(/[^0-9]/g, '');
+  if (clean.startsWith('880') && clean.length >= 13) {
+    clean = clean.slice(2);
+  }
+  return clean;
+}
+
+let schemaEnsured = false;
+
+async function ensureD1Schema(db: D1Database) {
+  if (schemaEnsured) return;
+  try {
+    await db.prepare(
+      `CREATE TABLE IF NOT EXISTS users (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        phone TEXT UNIQUE NOT NULL,
+        role TEXT DEFAULT 'customer',
+        password_hash TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )`
+    ).run();
+
+    // Ensure password_hash and role exist if users table was pre-created without them
+    try {
+      const { results: cols } = await db.prepare('PRAGMA table_info(users)').all<any>();
+      const colNames = new Set((cols || []).map((c: any) => c.name));
+      if (!colNames.has('password_hash')) {
+        await db.prepare('ALTER TABLE users ADD COLUMN password_hash TEXT').run();
+      }
+      if (!colNames.has('role')) {
+        await db.prepare("ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'customer'").run();
+      }
+    } catch (colErr) {
+      console.warn('PRAGMA users column check warning:', colErr);
+    }
+
+    await db.prepare(
+      `CREATE TABLE IF NOT EXISTS sessions (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        token TEXT UNIQUE NOT NULL,
+        expires_at DATETIME NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )`
+    ).run();
+
+    await db.prepare(
+      `CREATE TABLE IF NOT EXISTS reviews (
+        id TEXT PRIMARY KEY,
+        shop_id TEXT NOT NULL,
+        customer_name TEXT NOT NULL,
+        rating INTEGER NOT NULL,
+        comment TEXT NOT NULL,
+        date_bn TEXT NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )`
+    ).run();
+
+    schemaEnsured = true;
+  } catch (e) {
+    console.warn('ensureD1Schema warning:', e);
+  }
 }
 
 export default {
@@ -116,6 +184,7 @@ export default {
         try {
           if (env.DB) {
             await env.DB.prepare('SELECT 1').run();
+            await ensureD1Schema(env.DB);
             isDbConnected = true;
           }
         } catch (e) {
@@ -133,11 +202,17 @@ export default {
         });
       }
 
+      if (!env.DB) {
+        return errorResponse('Cloudflare D1 বাইন্ডিং (DB) কনফিগার করা হয়নি। wrangler.toml পরীক্ষা করুন।', 500);
+      }
+
+      await ensureD1Schema(env.DB);
+
       // ---------------------------------------------------------
       // 0.1 Authentication: Register (POST /api/auth/register)
       // ---------------------------------------------------------
       if (pathname === '/api/auth/register' && method === 'POST') {
-        const body = (await request.json()) as any;
+        const body = ((await request.json().catch(() => ({}))) || {}) as any;
         const name = body.name?.trim();
         const rawPhone = body.phone?.trim();
         const password = body.password?.trim();
